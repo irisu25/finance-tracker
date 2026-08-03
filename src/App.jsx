@@ -30,8 +30,8 @@ import {
 } from "@/components/ui/chart"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut } from 'lucide-react'
-import Auth from './components/Auth'
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn } from 'lucide-react'
+import AuthModal from './components/AuthModal'
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -53,6 +53,7 @@ function App() {
   const [settings, setSettings] = useState({ monthly_budget: 5000000, savings_target: 1000000 })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [txToDelete, setTxToDelete] = useState(null)
   const [session, setSession] = useState(null)
@@ -88,6 +89,10 @@ function App() {
   useEffect(() => {
     if (session) {
       fetchData()
+    } else {
+      setTransactions([])
+      setSettings({ monthly_budget: 5000000, savings_target: 1000000 })
+      setIsLoading(false)
     }
   }, [session])
 
@@ -113,13 +118,12 @@ function App() {
     }
   }
 
-  if (!session) {
-    return (
-      <>
-        <Auth />
-        <Toaster position="bottom-right" richColors />
-      </>
-    )
+  const handleAction = (actionCallback) => {
+    if (!session) {
+      setIsAuthOpen(true)
+    } else {
+      actionCallback()
+    }
   }
 
   const handleTransactionAdded = (newTx) => {
@@ -206,14 +210,23 @@ function App() {
             <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Button variant="outline" size="sm" className="h-9" onClick={() => setIsSettingsOpen(true)}>
+            <Button variant="outline" size="sm" className="h-9" onClick={() => handleAction(() => setIsSettingsOpen(true))}>
               <Settings className="w-4 h-4 mr-2" />
               Target
             </Button>
-            <Button variant="destructive" size="sm" className="h-9 w-9 p-0" onClick={() => supabase.auth.signOut()}>
-              <LogOut className="h-4 w-4" />
-            </Button>
-            <Button size="sm" className="h-9" onClick={() => setIsModalOpen(true)}>
+            
+            {session ? (
+              <Button variant="destructive" size="sm" className="h-9 w-9 p-0" onClick={() => supabase.auth.signOut()}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button variant="default" size="sm" className="h-9" onClick={() => setIsAuthOpen(true)}>
+                <LogIn className="w-4 h-4 mr-2" />
+                Login
+              </Button>
+            )}
+
+            <Button size="sm" className="h-9" onClick={() => handleAction(() => setIsModalOpen(true))}>
               <Plus className="w-4 h-4 mr-2" />
               Transaksi
             </Button>
@@ -433,6 +446,8 @@ function App() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       
       <Toaster position="bottom-right" richColors />
     </div>
