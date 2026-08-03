@@ -31,7 +31,7 @@ import {
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff } from 'lucide-react'
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff, Download } from 'lucide-react'
 import AuthModal from './components/AuthModal'
 import POMerch from './components/POMerch'
 
@@ -134,15 +134,46 @@ function App() {
   }
 
   const confirmDelete = async () => {
-    if(!txToDelete) return
+    if (!txToDelete) return
+    
     const { error } = await supabase.from('transactions').delete().eq('id', txToDelete.id)
-    if(error) {
-      toast.error("Gagal menghapus: " + error.message)
+    if (error) {
+      toast.error('Gagal menghapus transaksi.')
     } else {
-      setTransactions(transactions.filter(t => t.id !== txToDelete.id))
-      toast.success("Transaksi berhasil dihapus")
+      toast.success('Transaksi dihapus.')
+      fetchData()
     }
     setTxToDelete(null)
+  }
+
+  const handleExportCSV = () => {
+    if (!transactions.length) {
+      toast.error("Belum ada data untuk diekspor.")
+      return
+    }
+    
+    const headers = ['Tanggal', 'Tipe', 'Kategori', 'Nominal', 'Catatan']
+    const csvRows = [headers.join(',')]
+    
+    // Ekspor semua transaksi atau hanya bulan ini?
+    // User ingin liat di sheets, mending semua atau bulan ini. Kita export bulan ini yang difilter
+    monthlyTransactions.forEach(tx => {
+      const type = tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'
+      const category = `"${tx.category}"`
+      const note = `"${tx.note || ''}"`
+      csvRows.push([tx.date, type, category, tx.amount, note].join(','))
+    })
+    
+    const csvString = csvRows.join('\n')
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `FinanceTracker_${selectedMonth}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success("Berhasil mengekspor ke CSV!")
   }
 
   // All-time balance
@@ -388,9 +419,13 @@ function App() {
                 <CardTitle>Riwayat Transaksi</CardTitle>
                 <CardDescription>Daftar pemasukan dan pengeluaran.</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" className="h-9" onClick={handleExportCSV}>
+                  <Download className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Export CSV</span>
+                </Button>
                 <Button size="sm" className="h-9" onClick={() => handleAction(() => setIsModalOpen(true))}>
-                  <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+                  <Plus className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Tambah Transaksi</span>
                   <span className="sm:hidden">Tambah</span>
                 </Button>
