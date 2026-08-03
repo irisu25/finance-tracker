@@ -30,8 +30,10 @@ import {
 } from "@/components/ui/chart"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff } from 'lucide-react'
 import AuthModal from './components/AuthModal'
+import POMerch from './components/POMerch'
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -251,7 +253,13 @@ function App() {
           </div>
         </header>
 
-        {/* Dashboard Cards */}
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6 h-11">
+            <TabsTrigger value="dashboard" className="text-sm">Dashboard</TabsTrigger>
+            <TabsTrigger value="pomerch" className="text-sm">PO Merch</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-6 outline-none">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
           <Card className="col-span-2 md:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -442,8 +450,13 @@ function App() {
         </Card>
       </div>
 
+          </TabsContent>
+          
+          <TabsContent value="pomerch" className="outline-none">
+            <POMerch session={session} />
+          </TabsContent>
+        </Tabs>
       </div>
-
       <TransactionModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
