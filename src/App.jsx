@@ -5,6 +5,13 @@ import SettingsModal from './components/SettingsModal'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2 } from 'lucide-react'
 
 function App() {
@@ -18,6 +25,11 @@ function App() {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     return `${today.getFullYear()}-${mm}`;
   })
+  const [filterCategory, setFilterCategory] = useState("Semua")
+
+  useEffect(() => {
+    setFilterCategory("Semua")
+  }, [selectedMonth])
 
   useEffect(() => {
     fetchData()
@@ -68,6 +80,9 @@ function App() {
   const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0)
   const totalExpense = monthlyTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0)
   const monthlyBalance = totalIncome - totalExpense
+
+  const availableCategories = ["Semua", ...new Set(monthlyTransactions.map(t => t.category))]
+  const displayedTransactions = filterCategory === "Semua" ? monthlyTransactions : monthlyTransactions.filter(t => t.category === filterCategory)
 
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
 
@@ -203,18 +218,32 @@ function App() {
 
         {/* Transaction History */}
         <Card>
-          <CardHeader>
-            <CardTitle>Riwayat Transaksi</CardTitle>
-            <CardDescription>Daftar pemasukan dan pengeluaran di bulan {new Date(selectedMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}.</CardDescription>
+          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle>Riwayat Transaksi</CardTitle>
+              <CardDescription>Daftar pemasukan dan pengeluaran di bulan {new Date(selectedMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}.</CardDescription>
+            </div>
+            {availableCategories.length > 1 && (
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Semua Kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCategories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Memuat data...</div>
-            ) : monthlyTransactions.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">Belum ada transaksi di bulan ini. Mulai catat keuangan Anda!</div>
+            ) : displayedTransactions.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">Belum ada transaksi yang sesuai.</div>
             ) : (
               <div className="divide-y">
-                {monthlyTransactions.map(tx => (
+                {displayedTransactions.map(tx => (
                   <div key={tx.id} className="p-6 flex justify-between items-center hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'}`}>
