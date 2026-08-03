@@ -28,6 +28,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { Toaster } from "@/components/ui/sonner"
+import { toast } from "sonner"
 import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign } from 'lucide-react'
 
 const getCategoryIcon = (category) => {
@@ -96,9 +98,10 @@ function App() {
     if(!txToDelete) return
     const { error } = await supabase.from('transactions').delete().eq('id', txToDelete.id)
     if(error) {
-      alert("Gagal menghapus: " + error.message)
+      toast.error("Gagal menghapus: " + error.message)
     } else {
       setTransactions(transactions.filter(t => t.id !== txToDelete.id))
+      toast.success("Transaksi berhasil dihapus")
     }
     setTxToDelete(null)
   }
@@ -390,6 +393,8 @@ function App() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <Toaster position="bottom-right" richColors />
     </div>
   )
 }

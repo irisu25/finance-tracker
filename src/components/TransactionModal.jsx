@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { toast } from "sonner"
 
 export default function TransactionModal({ isOpen, onClose, onTransactionAdded }) {
   const [type, setType] = useState('expense')
@@ -29,14 +30,14 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded }
     e.preventDefault()
     setIsLoading(true)
 
-    if (!amount || !category || !date) {
-      alert("Mohon lengkapi data wajib (Nominal, Kategori, Tanggal)")
+    if (!amount || !category || !date || !note) {
+      toast.error("Mohon lengkapi semua data wajib")
       setIsLoading(false)
       return
     }
 
     if (!supabase) {
-        alert("Supabase client belum terkonfigurasi. Pastikan .env sudah benar.")
+        toast.error("Supabase client belum terkonfigurasi. Pastikan .env sudah benar.")
         setIsLoading(false)
         return
     }
@@ -50,8 +51,9 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded }
 
     if (error) {
       console.error("Error inserting transaction:", error)
-      alert("Gagal menyimpan transaksi: " + error.message)
+      toast.error("Gagal menyimpan transaksi: " + error.message)
     } else {
+      toast.success("Transaksi berhasil ditambahkan")
       setAmount('')
       setCategory('')
       setNote('')

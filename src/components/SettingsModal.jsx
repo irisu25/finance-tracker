@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 
 export default function SettingsModal({ isOpen, onClose, currentSettings, onSettingsUpdated }) {
   const [budget, setBudget] = useState('')
@@ -27,7 +28,7 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
     setIsLoading(true)
 
     if (!budget || !target) {
-      alert("Mohon isi kedua target")
+      toast.error("Mohon isi kedua target")
       setIsLoading(false)
       return
     }
@@ -46,8 +47,9 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
 
     if (error) {
       console.error("Error updating settings:", error)
-      alert("Gagal memperbarui pengaturan: " + error.message)
+      toast.error("Gagal memperbarui pengaturan: " + error.message)
     } else {
+      toast.success("Pengaturan berhasil disimpan")
       onSettingsUpdated(updatedSettings)
       onClose()
     }
