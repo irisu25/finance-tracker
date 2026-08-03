@@ -4,6 +4,7 @@ import TransactionModal from './components/TransactionModal'
 import SettingsModal from './components/SettingsModal'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2 } from 'lucide-react'
 
 function App() {
@@ -12,6 +13,11 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    return `${today.getFullYear()}-${mm}`;
+  })
 
   useEffect(() => {
     fetchData()
@@ -52,17 +58,24 @@ function App() {
     }
   }
 
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0)
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0)
-  const balance = totalIncome - totalExpense
+  // All-time balance
+  const totalIncomeAll = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0)
+  const totalExpenseAll = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0)
+  const balance = totalIncomeAll - totalExpenseAll
+
+  // Monthly stats
+  const monthlyTransactions = transactions.filter(t => t.date.startsWith(selectedMonth))
+  const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0)
+  const totalExpense = monthlyTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0)
+  const monthlyBalance = totalIncome - totalExpense
 
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
 
   const budgetPercentage = Math.min((totalExpense / settings.monthly_budget) * 100, 100)
   const isOverBudget = totalExpense > settings.monthly_budget
 
-  const savingsPercentage = Math.min((balance / settings.savings_target) * 100, 100)
-  const isSavingsMet = balance >= settings.savings_target
+  const savingsPercentage = Math.min((monthlyBalance / settings.savings_target) * 100, 100)
+  const isSavingsMet = monthlyBalance >= settings.savings_target
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans p-4 sm:p-8">
@@ -74,14 +87,20 @@ function App() {
             <h1 className="text-3xl font-bold tracking-tight">Finance Tracker</h1>
             <p className="text-muted-foreground mt-1 text-sm">Pantau keuangan Anda dengan mudah dan jelas.</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
+          <div className="flex flex-wrap items-center gap-3">
+            <Input 
+              type="month" 
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-auto h-9"
+            />
+            <Button variant="outline" size="sm" className="h-9" onClick={() => setIsSettingsOpen(true)}>
               <Settings className="w-4 h-4 mr-2" />
               Target
             </Button>
-            <Button onClick={() => setIsModalOpen(true)}>
+            <Button size="sm" className="h-9" onClick={() => setIsModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Transaksi Baru
+              Transaksi
             </Button>
           </div>
         </header>
@@ -90,7 +109,7 @@ function App() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Saldo</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Saldo (Semua Waktu)</CardTitle>
               <Wallet className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -125,7 +144,7 @@ function App() {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-base">Batas Pengeluaran</CardTitle>
+                <CardTitle className="text-base">Batas Pengeluaran Bulan Ini</CardTitle>
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${isOverBudget ? 'bg-destructive/15 text-destructive' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'}`}>
                   {isOverBudget ? 'Overbudget' : 'Aman'}
                 </span>
@@ -154,7 +173,7 @@ function App() {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-base">Target Tabungan</CardTitle>
+                <CardTitle className="text-base">Target Tabungan Bulan Ini</CardTitle>
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${isSavingsMet ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'}`}>
                   {isSavingsMet ? 'Tercapai 🎉' : 'On Track'}
                 </span>
@@ -162,7 +181,7 @@ function App() {
               <CardDescription>
                 {isSavingsMet
                   ? "Bagus! Terus pertahankan."
-                  : `Kurang ${formatIDR(settings.savings_target - balance)}`
+                  : `Kurang ${formatIDR(settings.savings_target - monthlyBalance)}`
                 }
               </CardDescription>
             </CardHeader>
@@ -174,7 +193,7 @@ function App() {
                 />
               </div>
               <div className="flex justify-between text-xs text-muted-foreground mt-2 font-mono">
-                <span>{formatIDR(balance < 0 ? 0 : balance)}</span>
+                <span>{formatIDR(monthlyBalance < 0 ? 0 : monthlyBalance)}</span>
                 <span>{formatIDR(settings.savings_target)}</span>
               </div>
             </CardContent>
@@ -186,16 +205,16 @@ function App() {
         <Card>
           <CardHeader>
             <CardTitle>Riwayat Transaksi</CardTitle>
-            <CardDescription>Daftar pemasukan dan pengeluaran terbaru Anda.</CardDescription>
+            <CardDescription>Daftar pemasukan dan pengeluaran di bulan {new Date(selectedMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Memuat data...</div>
-            ) : transactions.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">Belum ada transaksi. Mulai catat keuangan Anda!</div>
+            ) : monthlyTransactions.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">Belum ada transaksi di bulan ini. Mulai catat keuangan Anda!</div>
             ) : (
               <div className="divide-y">
-                {transactions.map(tx => (
+                {monthlyTransactions.map(tx => (
                   <div key={tx.id} className="p-6 flex justify-between items-center hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'}`}>
