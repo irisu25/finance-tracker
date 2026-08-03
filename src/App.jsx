@@ -219,12 +219,12 @@ function App() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Input 
               type="month" 
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-[150px] sm:w-auto h-9 shrink-0"
+              className="w-[150px] sm:w-auto h-9 shrink-0 dark:[color-scheme:dark]"
             />
             <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => handleAction(() => setIsSettingsOpen(true))}>
               <Settings className="w-4 h-4 sm:mr-2" />
