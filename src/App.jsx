@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import TransactionModal from './components/TransactionModal'
-
+import SettingsModal from './components/SettingsModal'
 function App() {
   const [transactions, setTransactions] = useState([])
   const [settings, setSettings] = useState({ monthly_budget: 5000000, savings_target: 1000000 })
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -102,12 +103,20 @@ function App() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
             Finance Tracker
           </h1>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transform hover:-translate-y-0.5"
-          >
-            + Transaksi Baru
-          </button>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-medium transition-all border border-slate-700"
+            >
+              Pengaturan Target
+            </button>
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transform hover:-translate-y-0.5"
+            >
+              + Transaksi Baru
+            </button>
+          </div>
         </header>
 
         {/* Dashboard Cards */}
@@ -246,6 +255,12 @@ function App() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onTransactionAdded={handleTransactionAdded} 
+      />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentSettings={settings}
+        onSettingsUpdated={(newSettings) => setSettings(newSettings)}
       />
     </div>
   )
