@@ -3,9 +3,12 @@
 Web app simpel buat nyatet pengeluaran dan pemasukan bulanan. Udah support multi-user pake Supabase Auth, jadi data tiap user aman dan misah-misah.
 
 ## Fitur
-- Catat pemasukan & pengeluaran
+- Catat pemasukan & pengeluaran bulanan
+- Tracker PO Merch (khusus buat nyatet cicilan & sisa utang barang PO)
+- Export mutasi ke CSV (bisa dibuka di Google Sheets/Excel)
 - Set target budget bulanan & target tabungan
-- Dark mode
+- Fitur privasi (sembunyikan saldo & lihat password)
+- Mode gelap (Dark mode)
 - Bisa diinstall ke HP (PWA)
 - Multi-user (Supabase Auth & RLS)
 
