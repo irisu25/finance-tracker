@@ -420,14 +420,14 @@ function App() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onTransactionAdded={handleTransactionAdded} 
-        userId={session.user.id}
+        userId={session?.user?.id}
       />
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         currentSettings={settings}
         onSettingsUpdated={(newSettings) => setSettings(newSettings)}
-        userId={session.user.id}
+        userId={session?.user?.id}
       />
 
       <AlertDialog open={!!txToDelete} onOpenChange={(open) => !open && setTxToDelete(null)}>
