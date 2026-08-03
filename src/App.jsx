@@ -146,12 +146,12 @@ function App() {
 
   const chartConfig = {
     amount: { label: "Pengeluaran" },
-    Makanan: { label: "Makanan", color: "hsl(var(--chart-1))" },
-    Transportasi: { label: "Transportasi", color: "hsl(var(--chart-2))" },
-    Belanja: { label: "Belanja", color: "hsl(var(--chart-3))" },
-    Tagihan: { label: "Tagihan", color: "hsl(var(--chart-4))" },
-    Hiburan: { label: "Hiburan", color: "hsl(var(--chart-5))" },
-    Lainnya: { label: "Lainnya", color: "hsl(var(--muted-foreground))" },
+    Makanan: { label: "Makanan", color: "#f43f5e" },
+    Transportasi: { label: "Transportasi", color: "#3b82f6" },
+    Belanja: { label: "Belanja", color: "#8b5cf6" },
+    Tagihan: { label: "Tagihan", color: "#f59e0b" },
+    Hiburan: { label: "Hiburan", color: "#10b981" },
+    Lainnya: { label: "Lainnya", color: "#64748b" },
   }
 
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
