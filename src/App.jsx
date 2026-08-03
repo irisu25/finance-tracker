@@ -12,6 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2 } from 'lucide-react'
 
 function App() {
@@ -20,6 +30,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [txToDelete, setTxToDelete] = useState(null)
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const today = new Date();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -60,14 +71,15 @@ function App() {
     setTransactions((prev) => [newTx, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)))
   }
 
-  const handleDelete = async (id) => {
-    if(!confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return
-    const { error } = await supabase.from('transactions').delete().eq('id', id)
+  const confirmDelete = async () => {
+    if(!txToDelete) return
+    const { error } = await supabase.from('transactions').delete().eq('id', txToDelete.id)
     if(error) {
       alert("Gagal menghapus: " + error.message)
     } else {
-      setTransactions(transactions.filter(t => t.id !== id))
+      setTransactions(transactions.filter(t => t.id !== txToDelete.id))
     }
+    setTxToDelete(null)
   }
 
   // All-time balance
@@ -264,7 +276,7 @@ function App() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => handleDelete(tx.id)}
+                        onClick={() => setTxToDelete(tx)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -290,6 +302,23 @@ function App() {
         currentSettings={settings}
         onSettingsUpdated={(newSettings) => setSettings(newSettings)}
       />
+
+      <AlertDialog open={!!txToDelete} onOpenChange={(open) => !open && setTxToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak bisa dibatalkan. Transaksi ini akan dihapus permanen dari riwayat keuangan Anda.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
