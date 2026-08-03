@@ -21,6 +21,12 @@
   html {
     @apply font-sans;
   }
+  html.dark {
+    color-scheme: dark;
+  }
+  .dark ::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
 }
 
 @theme inline {
