@@ -22,6 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Pie, PieChart } from "recharts"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
 import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign } from 'lucide-react'
 
 const getCategoryIcon = (category) => {
@@ -110,6 +116,32 @@ function App() {
 
   const availableCategories = ["Semua", ...new Set(monthlyTransactions.map(t => t.category))]
   const displayedTransactions = filterCategory === "Semua" ? monthlyTransactions : monthlyTransactions.filter(t => t.category === filterCategory)
+
+  // Chart Data Preparation
+  const expenseCategories = ['Makanan', 'Transportasi', 'Belanja', 'Tagihan', 'Hiburan', 'Lainnya']
+  const expenseColors = [
+    "var(--color-Makanan)",
+    "var(--color-Transportasi)",
+    "var(--color-Belanja)",
+    "var(--color-Tagihan)",
+    "var(--color-Hiburan)",
+    "var(--color-Lainnya)"
+  ]
+
+  const chartData = expenseCategories.map((cat, i) => {
+    const total = monthlyTransactions.filter(t => t.type === 'expense' && t.category === cat).reduce((acc, curr) => acc + curr.amount, 0)
+    return { category: cat, amount: total, fill: expenseColors[i] }
+  }).filter(d => d.amount > 0)
+
+  const chartConfig = {
+    amount: { label: "Pengeluaran" },
+    Makanan: { label: "Makanan", color: "hsl(var(--chart-1))" },
+    Transportasi: { label: "Transportasi", color: "hsl(var(--chart-2))" },
+    Belanja: { label: "Belanja", color: "hsl(var(--chart-3))" },
+    Tagihan: { label: "Tagihan", color: "hsl(var(--chart-4))" },
+    Hiburan: { label: "Hiburan", color: "hsl(var(--chart-5))" },
+    Lainnya: { label: "Lainnya", color: "hsl(var(--muted-foreground))" },
+  }
 
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
 
@@ -243,13 +275,36 @@ function App() {
 
         </div>
 
-        {/* Transaction History */}
-        <Card>
-          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Riwayat Transaksi</CardTitle>
-              <CardDescription>Daftar pemasukan dan pengeluaran di bulan {new Date(selectedMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}.</CardDescription>
-            </div>
+        {/* Analytics & History Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Chart */}
+          <Card className="col-span-1 flex flex-col">
+            <CardHeader className="items-center pb-2">
+              <CardTitle>Distribusi Pengeluaran</CardTitle>
+              <CardDescription>Bulan {new Date(selectedMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 pb-0">
+              {chartData.length > 0 ? (
+                <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
+                  <PieChart>
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                    <Pie data={chartData} dataKey="amount" nameKey="category" innerRadius={60} strokeWidth={5} />
+                  </PieChart>
+                </ChartContainer>
+              ) : (
+                <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">Belum ada pengeluaran.</div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Transaction History */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle>Riwayat Transaksi</CardTitle>
+                <CardDescription>Daftar pemasukan dan pengeluaran.</CardDescription>
+              </div>
             {availableCategories.length > 1 && (
               <Select value={filterCategory} onValueChange={setFilterCategory}>
                 <SelectTrigger className="w-[180px]">
@@ -303,6 +358,7 @@ function App() {
             )}
           </CardContent>
         </Card>
+      </div>
 
       </div>
 
