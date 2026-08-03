@@ -16,6 +16,7 @@ export default function AuthModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isLogin, setIsLogin] = useState(true)
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function AuthModal({ isOpen, onClose }) {
       setIsLogin(true)
       setEmail('')
       setPassword('')
+      setConfirmPassword('')
     }
   }, [isOpen])
 
@@ -36,6 +38,16 @@ export default function AuthModal({ isOpen, onClose }) {
         toast.success("Berhasil login!")
         onClose()
       } else {
+        if (password.length < 8) {
+          toast.error("Password harus minimal 8 karakter")
+          setLoading(false)
+          return
+        }
+        if (password !== confirmPassword) {
+          toast.error("Konfirmasi password tidak cocok")
+          setLoading(false)
+          return
+        }
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         toast.success("Berhasil mendaftar! Anda telah otomatis masuk.")
@@ -78,6 +90,15 @@ export default function AuthModal({ isOpen, onClose }) {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {!isLogin && (
+              <Input 
+                type="password" 
+                placeholder="Konfirmasi Password" 
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Memproses...' : (isLogin ? 'Masuk' : 'Daftar')}
             </Button>
