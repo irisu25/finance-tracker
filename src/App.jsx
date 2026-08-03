@@ -206,7 +206,7 @@ function App() {
                 />
               </div>
               <div className="flex justify-between text-xs text-muted-foreground mt-2 font-mono">
-                <span>0</span>
+                <span>{formatIDR(totalExpense)}</span>
                 <span>{formatIDR(settings.monthly_budget)}</span>
               </div>
             </CardContent>
