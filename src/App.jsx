@@ -216,7 +216,7 @@ function App() {
             </Button>
             
             {session ? (
-              <Button variant="destructive" size="sm" className="h-9 w-9 p-0" onClick={() => supabase.auth.signOut()}>
+              <Button variant="destructive" size="sm" className="h-9 w-9 p-0" onClick={() => supabase.auth.signOut()} title="Logout">
                 <LogOut className="h-4 w-4" />
               </Button>
             ) : (
@@ -225,11 +225,6 @@ function App() {
                 Login
               </Button>
             )}
-
-            <Button size="sm" className="h-9" onClick={() => handleAction(() => setIsModalOpen(true))}>
-              <Plus className="w-4 h-4 mr-2" />
-              Transaksi
-            </Button>
           </div>
         </header>
 
@@ -359,19 +354,26 @@ function App() {
                 <CardTitle>Riwayat Transaksi</CardTitle>
                 <CardDescription>Daftar pemasukan dan pengeluaran.</CardDescription>
               </div>
-            {availableCategories.length > 1 && (
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Semua Kategori" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </CardHeader>
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="h-9" onClick={() => handleAction(() => setIsModalOpen(true))}>
+                  <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Tambah Transaksi</span>
+                  <span className="sm:hidden">Tambah</span>
+                </Button>
+                {availableCategories.length > 1 && (
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="w-[140px] sm:w-[180px] h-9">
+                      <SelectValue placeholder="Semua Kategori" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCategories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Memuat data...</div>

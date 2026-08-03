@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,14 @@ export default function AuthModal({ isOpen, onClose }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLogin, setIsLogin] = useState(true)
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(true)
+      setEmail('')
+      setPassword('')
+    }
+  }, [isOpen])
 
   const handleAuth = async (e) => {
     e.preventDefault()
