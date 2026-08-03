@@ -22,7 +22,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2 } from 'lucide-react'
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign } from 'lucide-react'
+
+const getCategoryIcon = (category) => {
+  switch (category) {
+    case 'Makanan': return <Utensils className="w-5 h-5" />;
+    case 'Transportasi': return <Car className="w-5 h-5" />;
+    case 'Belanja': return <ShoppingBag className="w-5 h-5" />;
+    case 'Tagihan': return <Receipt className="w-5 h-5" />;
+    case 'Hiburan': return <Film className="w-5 h-5" />;
+    case 'Gaji': return <Briefcase className="w-5 h-5" />;
+    case 'Bonus': return <Award className="w-5 h-5" />;
+    case 'Investasi': return <LineChart className="w-5 h-5" />;
+    case 'Hadiah': return <Gift className="w-5 h-5" />;
+    default: return <CircleDollarSign className="w-5 h-5" />;
+  }
+}
 
 function App() {
   const [transactions, setTransactions] = useState([])
@@ -259,7 +274,7 @@ function App() {
                   <div key={tx.id} className="p-6 flex justify-between items-center hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'}`}>
-                        {tx.type === 'income' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                        {getCategoryIcon(tx.category)}
                       </div>
                       <div>
                         <p className="font-medium">{tx.category}</p>
