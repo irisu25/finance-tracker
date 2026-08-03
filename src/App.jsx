@@ -196,35 +196,57 @@ function App() {
         
         {/* Header */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Finance Tracker</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Pantau keuangan Anda dengan mudah dan jelas.</p>
+          <div className="flex justify-between items-start w-full sm:w-auto">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Finance Tracker</h1>
+              <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Pantau keuangan Anda dengan mudah dan jelas.</p>
+            </div>
+            
+            {/* Mobile-only Top Right Controls */}
+            <div className="flex sm:hidden items-center gap-2 mt-1">
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+              {session ? (
+                <Button variant="destructive" size="sm" className="h-8 w-8 p-0" onClick={() => supabase.auth.signOut()} title="Logout">
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button variant="default" size="sm" className="h-8 w-8 p-0" onClick={() => setIsAuthOpen(true)}>
+                  <LogIn className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          
+          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
             <Input 
               type="month" 
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-auto h-9"
+              className="w-[150px] sm:w-auto h-9 shrink-0"
             />
-            <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-            <Button variant="outline" size="sm" className="h-9" onClick={() => handleAction(() => setIsSettingsOpen(true))}>
-              <Settings className="w-4 h-4 mr-2" />
-              Target
+            <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => handleAction(() => setIsSettingsOpen(true))}>
+              <Settings className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Target</span>
             </Button>
             
-            {session ? (
-              <Button variant="destructive" size="sm" className="h-9 w-9 p-0" onClick={() => supabase.auth.signOut()} title="Logout">
-                <LogOut className="h-4 w-4" />
+            {/* Desktop-only Controls */}
+            <div className="hidden sm:flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-            ) : (
-              <Button variant="default" size="sm" className="h-9" onClick={() => setIsAuthOpen(true)}>
-                <LogIn className="w-4 h-4 mr-2" />
-                Login
-              </Button>
-            )}
+              {session ? (
+                <Button variant="destructive" size="sm" className="h-9 w-9 p-0" onClick={() => supabase.auth.signOut()} title="Logout">
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button variant="default" size="sm" className="h-9" onClick={() => setIsAuthOpen(true)}>
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login
+                </Button>
+              )}
+            </div>
           </div>
         </header>
 
