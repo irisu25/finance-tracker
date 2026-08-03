@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/chart"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon } from 'lucide-react'
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut } from 'lucide-react'
+import Auth from './components/Auth'
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -54,6 +55,7 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [txToDelete, setTxToDelete] = useState(null)
+  const [session, setSession] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem("vite-ui-theme") || "light")
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const today = new Date();
@@ -61,6 +63,16 @@ function App() {
     return `${today.getFullYear()}-${mm}`;
   })
   const [filterCategory, setFilterCategory] = useState("Semua")
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     const root = window.document.documentElement
@@ -74,28 +86,40 @@ function App() {
   }, [selectedMonth])
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (session) {
+      fetchData()
+    }
+  }, [session])
 
   const fetchData = async () => {
+    if (!session?.user?.id) return
     setIsLoading(true)
-    if (!supabase) {
-      console.warn("Supabase client is not initialized.")
-      setIsLoading(false)
-      return
-    }
 
     try {
-      const { data: settingsData } = await supabase.from('user_settings').select('*').eq('id', 1).single()
-      if (settingsData) setSettings(settingsData)
+      const { data: settingsData } = await supabase.from('user_settings').select('*').eq('user_id', session.user.id)
+      if (settingsData && settingsData.length > 0) {
+        setSettings(settingsData[0])
+      } else {
+        const { data: newSettings, error } = await supabase.from('user_settings').insert({ user_id: session.user.id, monthly_budget: 5000000, savings_target: 1000000 }).select()
+        if (newSettings && newSettings.length > 0) setSettings(newSettings[0])
+      }
 
-      const { data: txData } = await supabase.from('transactions').select('*').order('date', { ascending: false })
+      const { data: txData } = await supabase.from('transactions').select('*').eq('user_id', session.user.id).order('date', { ascending: false })
       if (txData) setTransactions(txData)
     } catch (error) {
       console.error("Error fetching data:", error)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (!session) {
+    return (
+      <>
+        <Auth />
+        <Toaster position="bottom-right" richColors />
+      </>
+    )
   }
 
   const handleTransactionAdded = (newTx) => {
@@ -185,6 +209,9 @@ function App() {
             <Button variant="outline" size="sm" className="h-9" onClick={() => setIsSettingsOpen(true)}>
               <Settings className="w-4 h-4 mr-2" />
               Target
+            </Button>
+            <Button variant="destructive" size="sm" className="h-9 w-9 p-0" onClick={() => supabase.auth.signOut()}>
+              <LogOut className="h-4 w-4" />
             </Button>
             <Button size="sm" className="h-9" onClick={() => setIsModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -380,12 +407,14 @@ function App() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onTransactionAdded={handleTransactionAdded} 
+        userId={session.user.id}
       />
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         currentSettings={settings}
         onSettingsUpdated={(newSettings) => setSettings(newSettings)}
+        userId={session.user.id}
       />
 
       <AlertDialog open={!!txToDelete} onOpenChange={(open) => !open && setTxToDelete(null)}>

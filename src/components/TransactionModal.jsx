@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 
-export default function TransactionModal({ isOpen, onClose, onTransactionAdded }) {
+export default function TransactionModal({ isOpen, onClose, onTransactionAdded, userId }) {
   const [type, setType] = useState('expense')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('')
@@ -44,7 +44,7 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded }
 
     const { data, error } = await supabase
       .from('transactions')
-      .insert([{ amount: parseFloat(amount), type, category, date, note }])
+      .insert([{ amount: parseFloat(amount), type, category, date, note, user_id: userId }])
       .select()
 
     setIsLoading(false)

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
-export default function SettingsModal({ isOpen, onClose, currentSettings, onSettingsUpdated }) {
+export default function SettingsModal({ isOpen, onClose, currentSettings, onSettingsUpdated, userId }) {
   const [budget, setBudget] = useState('')
   const [target, setTarget] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -41,7 +41,7 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
     const { error } = await supabase
       .from('user_settings')
       .update(updatedSettings)
-      .eq('id', 1)
+      .eq('user_id', userId)
 
     setIsLoading(false)
 
