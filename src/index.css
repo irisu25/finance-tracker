@@ -14,7 +14,6 @@
 @layer base {
   body {
     @apply font-sans bg-background text-foreground;
-    background-color: var(--color-bg-dark);
   }
   * {
     @apply border-border outline-ring/50;

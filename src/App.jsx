@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/chart"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign } from 'lucide-react'
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon } from 'lucide-react'
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -54,12 +54,20 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [txToDelete, setTxToDelete] = useState(null)
+  const [theme, setTheme] = useState(() => localStorage.getItem("vite-ui-theme") || "light")
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const today = new Date();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     return `${today.getFullYear()}-${mm}`;
   })
   const [filterCategory, setFilterCategory] = useState("Semua")
+
+  useEffect(() => {
+    const root = window.document.documentElement
+    root.classList.remove("light", "dark")
+    root.classList.add(theme)
+    localStorage.setItem("vite-ui-theme", theme)
+  }, [theme])
 
   useEffect(() => {
     setFilterCategory("Semua")
@@ -171,6 +179,9 @@ function App() {
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="w-auto h-9"
             />
+            <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Button variant="outline" size="sm" className="h-9" onClick={() => setIsSettingsOpen(true)}>
               <Settings className="w-4 h-4 mr-2" />
               Target
