@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/chart"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn } from 'lucide-react'
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff } from 'lucide-react'
 import AuthModal from './components/AuthModal'
 
 const getCategoryIcon = (category) => {
@@ -57,6 +57,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [txToDelete, setTxToDelete] = useState(null)
   const [session, setSession] = useState(null)
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true)
   const [theme, setTheme] = useState(() => localStorage.getItem("vite-ui-theme") || "light")
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const today = new Date();
@@ -255,10 +256,14 @@ function App() {
           <Card className="col-span-2 md:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Saldo (Semua Waktu)</CardTitle>
-              <Wallet className="w-4 h-4 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground rounded-full hover:bg-muted" onClick={() => setIsBalanceVisible(!isBalanceVisible)}>
+                {isBalanceVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl sm:text-3xl font-bold font-mono">{formatIDR(balance)}</div>
+              <div className="text-2xl sm:text-3xl font-bold font-mono">
+                {isBalanceVisible ? formatIDR(balance) : 'Rp •••••••'}
+              </div>
             </CardContent>
           </Card>
           

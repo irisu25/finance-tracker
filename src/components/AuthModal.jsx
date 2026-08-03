@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { Wallet } from 'lucide-react'
+import { Wallet, Eye, EyeOff } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ export default function AuthModal({ isOpen, onClose }) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLogin, setIsLogin] = useState(true)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -54,7 +55,7 @@ export default function AuthModal({ isOpen, onClose }) {
         onClose()
       }
     } catch (error) {
-      toast.error(error.error_description || error.message)
+      toast.error("Email atau password salah/tidak valid.")
     } finally {
       setLoading(false)
     }
@@ -83,21 +84,41 @@ export default function AuthModal({ isOpen, onClose }) {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <Input 
-              type="password" 
-              placeholder="Password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            {!isLogin && (
+            <div className="relative">
               <Input 
-                type="password" 
-                placeholder="Konfirmasi Password" 
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                type={showPassword ? "text" : "password"} 
+                placeholder="Password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pr-10"
                 required
               />
+              <button 
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {!isLogin && (
+              <div className="relative">
+                <Input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="Konfirmasi Password" 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pr-10"
+                  required
+                />
+                <button 
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Memproses...' : (isLogin ? 'Masuk' : 'Daftar')}
