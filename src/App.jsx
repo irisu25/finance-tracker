@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import TransactionModal from './components/TransactionModal'
 import SettingsModal from './components/SettingsModal'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2 } from 'lucide-react'
+
 function App() {
   const [transactions, setTransactions] = useState([])
   const [settings, setSettings] = useState({ monthly_budget: 5000000, savings_target: 1000000 })
@@ -22,23 +26,11 @@ function App() {
     }
 
     try {
-      // Fetch settings
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('id', 1)
-        .single()
-      
+      const { data: settingsData } = await supabase.from('user_settings').select('*').eq('id', 1).single()
       if (settingsData) setSettings(settingsData)
 
-      // Fetch transactions
-      const { data: txData, error: txError } = await supabase
-        .from('transactions')
-        .select('*')
-        .order('date', { ascending: false })
-      
+      const { data: txData } = await supabase.from('transactions').select('*').order('date', { ascending: false })
       if (txData) setTransactions(txData)
-
     } catch (error) {
       console.error("Error fetching data:", error)
     } finally {
@@ -60,194 +52,182 @@ function App() {
     }
   }
 
-  // Kalkulasi
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0)
   const balance = totalIncome - totalExpense
 
-  // Format IDR
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
 
-  // Budget calculations
   const budgetPercentage = Math.min((totalExpense / settings.monthly_budget) * 100, 100)
-  let budgetColor = "from-emerald-400 via-yellow-400 to-rose-400"
-  let budgetStatus = "Aman"
-  let budgetStatusColor = "text-emerald-400 bg-emerald-400/10"
-  
-  if (budgetPercentage >= 90) {
-    budgetColor = "from-rose-500 to-rose-400"
-    budgetStatus = "Bahaya!"
-    budgetStatusColor = "text-rose-400 bg-rose-400/10"
-  } else if (budgetPercentage >= 70) {
-    budgetColor = "from-yellow-500 to-yellow-400"
-    budgetStatus = "Hati-hati"
-    budgetStatusColor = "text-yellow-400 bg-yellow-400/10"
-  }
+  const isOverBudget = totalExpense > settings.monthly_budget
 
-  // Savings calculations
   const savingsPercentage = Math.min((balance / settings.savings_target) * 100, 100)
-  let savingsStatus = "Belum Tercapai"
-  let savingsStatusColor = "text-slate-400 bg-slate-400/10"
-  if (savingsPercentage >= 100) {
-    savingsStatus = "Tercapai! 🎉"
-    savingsStatusColor = "text-emerald-400 bg-emerald-400/10"
-  } else if (savingsPercentage >= 50) {
-    savingsStatus = "On Track"
-    savingsStatusColor = "text-blue-400 bg-blue-400/10"
-  }
+  const isSavingsMet = balance >= settings.savings_target
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-4 sm:p-8">
-      <div className="max-w-5xl mx-auto">
-        <header className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            Finance Tracker
-          </h1>
+    <div className="min-h-screen bg-background text-foreground font-sans p-4 sm:p-8">
+      <div className="max-w-5xl mx-auto space-y-8">
+        
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Finance Tracker</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Pantau keuangan Anda dengan mudah dan jelas.</p>
+          </div>
           <div className="flex gap-3">
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-medium transition-all border border-slate-700"
-            >
-              Pengaturan Target
-            </button>
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transform hover:-translate-y-0.5"
-            >
-              + Transaksi Baru
-            </button>
+            <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
+              <Settings className="w-4 h-4 mr-2" />
+              Target
+            </Button>
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Transaksi Baru
+            </Button>
           </div>
         </header>
 
         {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl transition-transform hover:scale-[1.02]">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              </div>
-              <h3 className="text-slate-400 text-sm font-medium">Total Saldo</h3>
-            </div>
-            <p className="text-4xl font-bold tracking-tight">{formatIDR(balance)}</p>
-          </div>
-          <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl transition-transform hover:scale-[1.02]">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-              </div>
-              <h3 className="text-slate-400 text-sm font-medium">Pemasukan Bulan Ini</h3>
-            </div>
-            <p className="text-3xl font-bold text-emerald-400">{formatIDR(totalIncome)}</p>
-          </div>
-          <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl transition-transform hover:scale-[1.02]">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
-              </div>
-              <h3 className="text-slate-400 text-sm font-medium">Pengeluaran Bulan Ini</h3>
-            </div>
-            <p className="text-3xl font-bold text-rose-400">{formatIDR(totalExpense)}</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Saldo</CardTitle>
+              <Wallet className="w-4 h-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold font-mono">{formatIDR(balance)}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pemasukan Bulan Ini</CardTitle>
+              <TrendingUp className="w-4 h-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-500 font-mono">+{formatIDR(totalIncome)}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pengeluaran Bulan Ini</CardTitle>
+              <TrendingDown className="w-4 h-4 text-rose-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-rose-600 dark:text-rose-500 font-mono">-{formatIDR(totalExpense)}</div>
+            </CardContent>
+          </Card>
         </div>
         
-        {/* Budget Progress & Targets */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          {/* Budget Limit */}
-          <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
-            <div className="flex justify-between items-end mb-4">
-              <div>
-                <h3 className="text-slate-300 font-medium mb-1">Batas Pengeluaran Bulanan</h3>
-                <p className="text-sm text-slate-400">
-                  {totalExpense > settings.monthly_budget 
-                    ? `Overbudget: ${formatIDR(totalExpense - settings.monthly_budget)}`
-                    : `Sisa budget: ${formatIDR(settings.monthly_budget - totalExpense)}`
-                  }
-                </p>
+        {/* Progress & Targets */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-base">Batas Pengeluaran</CardTitle>
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${isOverBudget ? 'bg-destructive/15 text-destructive' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'}`}>
+                  {isOverBudget ? 'Overbudget' : 'Aman'}
+                </span>
               </div>
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${budgetStatusColor}`}>
-                {budgetStatus} ({Math.round(budgetPercentage)}%)
-              </span>
-            </div>
-            <div className="w-full bg-slate-700/50 rounded-full h-4 overflow-hidden p-0.5">
-              <div className={`bg-gradient-to-r ${budgetColor} h-full rounded-full transition-all duration-1000 ease-out relative`} style={{ width: `${budgetPercentage}%` }}>
-                {budgetPercentage > 0 && <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]"></div>}
+              <CardDescription>
+                {isOverBudget 
+                  ? `Melebihi batas ${formatIDR(totalExpense - settings.monthly_budget)}`
+                  : `Tersisa ${formatIDR(settings.monthly_budget - totalExpense)}`
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-1000 ${isOverBudget ? 'bg-destructive' : budgetPercentage > 75 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
+                  style={{ width: `${budgetPercentage}%` }}
+                />
               </div>
-            </div>
-            <div className="flex justify-between text-xs text-slate-500 mt-2 font-medium">
-              <span>Rp 0</span>
-              <span>{formatIDR(settings.monthly_budget)}</span>
-            </div>
-          </div>
+              <div className="flex justify-between text-xs text-muted-foreground mt-2 font-mono">
+                <span>0</span>
+                <span>{formatIDR(settings.monthly_budget)}</span>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Savings Target */}
-          <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
-            <div className="flex justify-between items-end mb-4">
-              <div>
-                <h3 className="text-slate-300 font-medium mb-1">Target Tabungan (Min. Saldo)</h3>
-                <p className="text-sm text-slate-400">
-                  {balance >= settings.savings_target
-                    ? "Target tercapai bulan ini!"
-                    : `Kurang: ${formatIDR(settings.savings_target - balance)}`
-                  }
-                </p>
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-base">Target Tabungan</CardTitle>
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${isSavingsMet ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'}`}>
+                  {isSavingsMet ? 'Tercapai 🎉' : 'On Track'}
+                </span>
               </div>
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${savingsStatusColor}`}>
-                {savingsStatus} ({Math.round(savingsPercentage)}%)
-              </span>
-            </div>
-            <div className="w-full bg-slate-700/50 rounded-full h-4 overflow-hidden p-0.5">
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-1000 ease-out relative" style={{ width: `${savingsPercentage}%` }}>
-                {savingsPercentage > 0 && <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]"></div>}
+              <CardDescription>
+                {isSavingsMet
+                  ? "Bagus! Terus pertahankan."
+                  : `Kurang ${formatIDR(settings.savings_target - balance)}`
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className="h-full rounded-full transition-all duration-1000 bg-blue-500" 
+                  style={{ width: `${savingsPercentage}%` }}
+                />
               </div>
-            </div>
-            <div className="flex justify-between text-xs text-slate-500 mt-2 font-medium">
-              <span>Terkumpul: {formatIDR(balance < 0 ? 0 : balance)}</span>
-              <span>Target: {formatIDR(settings.savings_target)}</span>
-            </div>
-          </div>
+              <div className="flex justify-between text-xs text-muted-foreground mt-2 font-mono">
+                <span>{formatIDR(balance < 0 ? 0 : balance)}</span>
+                <span>{formatIDR(settings.savings_target)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Transaction History */}
-        <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-xl overflow-hidden mb-10">
-          <div className="px-6 py-5 border-b border-slate-700/50">
-            <h2 className="text-xl font-bold">Riwayat Transaksi</h2>
-          </div>
-          <div className="p-0">
+        <Card>
+          <CardHeader>
+            <CardTitle>Riwayat Transaksi</CardTitle>
+            <CardDescription>Daftar pemasukan dan pengeluaran terbaru Anda.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
             {isLoading ? (
-              <div className="p-8 text-center text-slate-400">Memuat data...</div>
+              <div className="p-8 text-center text-muted-foreground text-sm">Memuat data...</div>
             ) : transactions.length === 0 ? (
-              <div className="p-8 text-center text-slate-400">Belum ada transaksi. Tambahkan transaksi pertama Anda!</div>
+              <div className="p-8 text-center text-muted-foreground text-sm">Belum ada transaksi. Mulai catat keuangan Anda!</div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y">
                 {transactions.map(tx => (
-                  <div key={tx.id} className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center hover:bg-slate-700/20 transition-colors group">
-                    <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg ${tx.type === 'income' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                        {tx.type === 'income' ? '↓' : '↑'}
+                  <div key={tx.id} className="p-6 flex justify-between items-center hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'}`}>
+                        {tx.type === 'income' ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                       </div>
                       <div>
-                        <p className="font-semibold text-lg">{tx.category}</p>
-                        <p className="text-sm text-slate-400">{new Date(tx.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })} {tx.note && `• ${tx.note}`}</p>
+                        <p className="font-medium">{tx.category}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {new Date(tx.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {tx.note && ` • ${tx.note}`}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                      <span className={`font-bold text-xl ${tx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <div className="flex items-center gap-4">
+                      <span className={`font-semibold font-mono ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'}`}>
                         {tx.type === 'income' ? '+' : '-'}{formatIDR(tx.amount)}
                       </span>
-                      <button 
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
                         onClick={() => handleDelete(tx.id)}
-                        className="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity p-2"
-                        title="Hapus"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
       </div>
 
