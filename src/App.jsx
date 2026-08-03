@@ -281,7 +281,7 @@ function App() {
                 />
               </div>
               <div className="flex justify-between text-xs text-muted-foreground mt-2 font-mono">
-                <span>{formatIDR(monthlyBalance < 0 ? 0 : monthlyBalance)}</span>
+                <span>{formatIDR(monthlyBalance)}</span>
                 <span>{formatIDR(settings.savings_target)}</span>
               </div>
             </CardContent>
