@@ -127,12 +127,13 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded }
             </div>
 
             <div className="space-y-2">
-              <Label>Catatan (Opsional)</Label>
+              <Label>Judul Transaksi</Label>
               <Input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Makan siang dengan klien"
+                placeholder="Contoh: Makan Nasi Padang"
+                required
               />
             </div>
           </div>

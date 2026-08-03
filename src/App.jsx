@@ -277,10 +277,10 @@ function App() {
                         {getCategoryIcon(tx.category)}
                       </div>
                       <div>
-                        <p className="font-medium">{tx.category}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(tx.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
-                          {tx.note && ` • ${tx.note}`}
+                        <p className="font-medium">{tx.note || tx.category}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                          <span>{new Date(tx.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-secondary text-[10px] font-medium">{tx.category}</span>
                         </p>
                       </div>
                     </div>
