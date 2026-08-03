@@ -124,7 +124,7 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="dark:[color-scheme:dark]"
+                className="dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
                 required
               />
             </div>

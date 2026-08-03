@@ -224,7 +224,7 @@ function App() {
               type="month" 
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-[150px] sm:w-auto h-9 shrink-0 dark:[color-scheme:dark]"
+              className="w-[150px] sm:w-auto h-9 shrink-0 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
             />
             <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => handleAction(() => setIsSettingsOpen(true))}>
               <Settings className="w-4 h-4 sm:mr-2" />
