@@ -76,6 +76,9 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
     if (error) {
       console.error("Error inserting transaction:", error)
       toast.error("Gagal menyimpan transaksi: " + error.message)
+    } else if (!data || data.length === 0) {
+      console.error("Insert succeeded but no data returned")
+      toast.error("Transaksi tersimpan tapi data tidak kembali. Refresh halaman.")
     } else {
       toast.success("Transaksi berhasil ditambahkan")
       setAmount('')

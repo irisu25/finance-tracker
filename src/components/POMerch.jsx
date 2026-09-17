@@ -42,6 +42,12 @@ export default function POMerch({ session }) {
   }, [session])
 
   const fetchItems = async () => {
+    if (!supabase) {
+      toast.error('Supabase belum terkonfigurasi. Cek .env.')
+      setIsLoading(false)
+      return
+    }
+    if (!session?.user?.id) return
     setIsLoading(true)
     const { data, error } = await supabase
       .from('preorders')
@@ -50,9 +56,10 @@ export default function POMerch({ session }) {
       .order('created_at', { ascending: false })
     
     if (error) {
-      toast.error('Gagal mengambil data PO')
+      console.error('Error fetching PO:', error)
+      toast.error('Gagal mengambil data PO: ' + (error?.message || 'unknown error'))
     } else {
-      setItems(data)
+      setItems(data || [])
     }
     setIsLoading(false)
   }
@@ -87,10 +94,16 @@ export default function POMerch({ session }) {
       user_id: session.user.id
     }
 
+    if (!supabase) {
+      toast.error('Supabase belum terkonfigurasi.')
+      setIsSubmitting(false)
+      return
+    }
     const { error } = await supabase.from('preorders').insert([newItem])
     
     if (error) {
-      toast.error('Gagal menambah PO')
+      console.error('Error adding PO:', error)
+      toast.error('Gagal menambah PO: ' + (error?.message || 'unknown error'))
     } else {
       toast.success('PO berhasil ditambahkan!')
       setIsModalOpen(false)
@@ -129,7 +142,8 @@ export default function POMerch({ session }) {
       .eq('id', selectedItem.id)
       
     if (error) {
-      toast.error('Gagal menyimpan pembayaran')
+      console.error('Error saving payment:', error)
+      toast.error('Gagal menyimpan pembayaran: ' + (error?.message || 'unknown error'))
     } else {
       toast.success('Pembayaran berhasil dicatat!')
       setIsPaymentModalOpen(false)
@@ -141,9 +155,14 @@ export default function POMerch({ session }) {
 
   const handleDelete = async (id) => {
     if (!confirm('Hapus item PO ini?')) return
+    if (!supabase) {
+      toast.error('Supabase belum terkonfigurasi.')
+      return
+    }
     const { error } = await supabase.from('preorders').delete().eq('id', id)
     if (error) {
-      toast.error('Gagal menghapus item')
+      console.error('Error deleting PO:', error)
+      toast.error('Gagal menghapus item: ' + (error?.message || 'unknown error'))
     } else {
       toast.success('Item dihapus')
       fetchItems()

@@ -101,21 +101,30 @@ function App() {
 
   const fetchData = async () => {
     if (!session?.user?.id) return
+    if (!supabase) {
+      toast.error("Supabase belum terkonfigurasi. Cek .env.")
+      setIsLoading(false)
+      return
+    }
     setIsLoading(true)
 
     try {
-      const { data: settingsData } = await supabase.from('user_settings').select('*').eq('user_id', session.user.id)
+      const { data: settingsData, error: settingsError } = await supabase.from('user_settings').select('*').eq('user_id', session.user.id)
+      if (settingsError) throw settingsError
       if (settingsData && settingsData.length > 0) {
         setSettings(settingsData[0])
       } else {
-        const { data: newSettings, error } = await supabase.from('user_settings').insert({ user_id: session.user.id, monthly_budget: 5000000, savings_target: 1000000 }).select()
+        const { data: newSettings, error: insertError } = await supabase.from('user_settings').insert({ user_id: session.user.id, monthly_budget: 5000000, savings_target: 1000000 }).select()
+        if (insertError) throw insertError
         if (newSettings && newSettings.length > 0) setSettings(newSettings[0])
       }
 
-      const { data: txData } = await supabase.from('transactions').select('*').eq('user_id', session.user.id).order('date', { ascending: false })
+      const { data: txData, error: txError } = await supabase.from('transactions').select('*').eq('user_id', session.user.id).order('date', { ascending: false })
+      if (txError) throw txError
       if (txData) setTransactions(txData)
     } catch (error) {
       console.error("Error fetching data:", error)
+      toast.error("Gagal memuat data: " + (error?.message || "unknown error"))
     } finally {
       setIsLoading(false)
     }
@@ -130,15 +139,22 @@ function App() {
   }
 
   const handleTransactionAdded = (newTx) => {
+    if (!newTx?.id) return
     setTransactions((prev) => [newTx, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)))
   }
 
   const confirmDelete = async () => {
     if (!txToDelete) return
+    if (!supabase) {
+      toast.error("Supabase belum terkonfigurasi.")
+      setTxToDelete(null)
+      return
+    }
     
     const { error } = await supabase.from('transactions').delete().eq('id', txToDelete.id)
     if (error) {
-      toast.error('Gagal menghapus transaksi.')
+      console.error("Error deleting transaction:", error)
+      toast.error('Gagal menghapus transaksi: ' + (error?.message || 'unknown error'))
     } else {
       toast.success('Transaksi dihapus.')
       fetchData()

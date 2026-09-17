@@ -36,6 +36,14 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
       toast.error("Target tabungan harus angka 0 atau lebih")
       return
     }
+    if (!supabase) {
+      toast.error("Supabase belum terkonfigurasi. Cek .env.")
+      return
+    }
+    if (!userId) {
+      toast.error("Anda harus login dulu.")
+      return
+    }
     setIsLoading(true)
 
     const updatedSettings = {
@@ -55,7 +63,7 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
       toast.error("Gagal memperbarui pengaturan: " + error.message)
     } else {
       toast.success("Pengaturan berhasil disimpan")
-      onSettingsUpdated(updatedSettings)
+      onSettingsUpdated({ ...(currentSettings || {}), ...updatedSettings })
       onClose()
     }
   }

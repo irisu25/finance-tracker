@@ -31,6 +31,10 @@ export default function AuthModal({ isOpen, onClose }) {
 
   const handleAuth = async (e) => {
     e.preventDefault()
+    if (!supabase) {
+      toast.error("Supabase belum terkonfigurasi. Cek .env.")
+      return
+    }
     setLoading(true)
     try {
       if (isLogin) {
@@ -41,12 +45,10 @@ export default function AuthModal({ isOpen, onClose }) {
       } else {
         if (password.length < 8) {
           toast.error("Password harus minimal 8 karakter")
-          setLoading(false)
           return
         }
         if (password !== confirmPassword) {
           toast.error("Konfirmasi password tidak cocok")
-          setLoading(false)
           return
         }
         const { error } = await supabase.auth.signUp({ email, password })
@@ -55,7 +57,8 @@ export default function AuthModal({ isOpen, onClose }) {
         onClose()
       }
     } catch (error) {
-      toast.error("Email atau password salah/tidak valid.")
+      console.error("Auth error:", error)
+      toast.error(error?.message || "Email atau password salah/tidak valid.")
     } finally {
       setLoading(false)
     }
