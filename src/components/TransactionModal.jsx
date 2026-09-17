@@ -25,7 +25,8 @@ const getLocalToday = () => {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
-export default function TransactionModal({ isOpen, onClose, onTransactionAdded, userId }) {
+export default function TransactionModal({ isOpen, onClose, onTransactionAdded, onTransactionUpdated, editingTx, userId }) {
+  const isEditing = !!editingTx
   const [type, setType] = useState('expense')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('')
@@ -34,8 +35,21 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (isOpen) setDate(getLocalToday())
-  }, [isOpen])
+    if (!isOpen) return
+    if (editingTx) {
+      setType(editingTx.type || 'expense')
+      setAmount(editingTx.amount != null ? String(editingTx.amount) : '')
+      setCategory(editingTx.category || '')
+      setDate(typeof editingTx.date === 'string' ? editingTx.date.slice(0, 10) : getLocalToday())
+      setNote(editingTx.note || '')
+    } else {
+      setType('expense')
+      setAmount('')
+      setCategory('')
+      setDate(getLocalToday())
+      setNote('')
+    }
+  }, [isOpen, editingTx])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -66,9 +80,33 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
         return
     }
 
+    const payload = { amount: parsedAmount, type, category, date, note: note.trim() || null }
+
+    if (isEditing) {
+      const { data, error } = await supabase
+        .from('transactions')
+        .update(payload)
+        .eq('id', editingTx.id)
+        .select()
+
+      setIsLoading(false)
+
+      if (error) {
+        console.error("Error updating transaction:", error)
+        toast.error("Gagal menyimpan perubahan: " + error.message)
+      } else if (!data || data.length === 0) {
+        toast.error("Perubahan tersimpan tapi data tidak kembali. Refresh halaman.")
+      } else {
+        toast.success("Transaksi berhasil diperbarui")
+        onTransactionUpdated?.(data[0])
+        onClose()
+      }
+      return
+    }
+
     const { data, error } = await supabase
       .from('transactions')
-      .insert([{ amount: parsedAmount, type, category, date, note: note.trim() || null, user_id: userId }])
+      .insert([{ ...payload, user_id: userId }])
       .select()
 
     setIsLoading(false)
@@ -97,7 +135,7 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Tambah Transaksi</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Transaksi' : 'Tambah Transaksi'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
@@ -170,7 +208,7 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Menyimpan...' : 'Simpan Transaksi'}
+            {isLoading ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Simpan Transaksi')}
           </Button>
         </form>
       </DialogContent>

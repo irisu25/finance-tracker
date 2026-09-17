@@ -31,7 +31,7 @@ import {
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff, Download } from 'lucide-react'
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Pencil, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff, Download } from 'lucide-react'
 import AuthModal from './components/AuthModal'
 import POMerch from './components/POMerch'
 
@@ -67,6 +67,11 @@ function App() {
     return `${today.getFullYear()}-${mm}`;
   })
   const [filterCategory, setFilterCategory] = useState("Semua")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortBy, setSortBy] = useState("date_desc")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [editingTx, setEditingTx] = useState(null)
+  const PAGE_SIZE = 10
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -87,7 +92,13 @@ function App() {
 
   useEffect(() => {
     setFilterCategory("Semua")
+    setSearchQuery("")
+    setCurrentPage(1)
   }, [selectedMonth])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterCategory, searchQuery, sortBy])
 
   useEffect(() => {
     if (session) {
@@ -143,6 +154,23 @@ function App() {
     setTransactions((prev) => [newTx, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)))
   }
 
+  const handleTransactionUpdated = (updatedTx) => {
+    if (!updatedTx?.id) return
+    setTransactions((prev) => prev.map(t => t.id === updatedTx.id ? updatedTx : t))
+  }
+
+  const handleEditClick = (tx) => {
+    handleAction(() => {
+      setEditingTx(tx)
+      setIsModalOpen(true)
+    })
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setEditingTx(null)
+  }
+
   const confirmDelete = async () => {
     if (!txToDelete) return
     if (!supabase) {
@@ -163,7 +191,7 @@ function App() {
   }
 
   const handleExportCSV = () => {
-    if (!transactions.length) {
+    if (!sortedTransactions.length) {
       toast.error("Belum ada data untuk diekspor.")
       return
     }
@@ -171,9 +199,8 @@ function App() {
     const headers = ['Tanggal', 'Tipe', 'Kategori', 'Nominal', 'Catatan']
     const csvRows = [headers.join(',')]
     
-    // Ekspor semua transaksi atau hanya bulan ini?
-    // User ingin liat di sheets, mending semua atau bulan ini. Kita export bulan ini yang difilter
-    monthlyTransactions.forEach(tx => {
+    // Ekspor data bulan ini yang sudah difilter search/kategori/sort (semua halaman)
+    sortedTransactions.forEach(tx => {
       const type = tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'
       const category = `"${tx.category}"`
       const note = `"${tx.note || ''}"`
@@ -207,7 +234,26 @@ function App() {
   const monthlyBalance = totalIncome - totalExpense
 
   const availableCategories = ["Semua", ...new Set(monthlyTransactions.map(t => t.category))]
-  const displayedTransactions = filterCategory === "Semua" ? monthlyTransactions : monthlyTransactions.filter(t => t.category === filterCategory)
+  const categoryFiltered = filterCategory === "Semua" ? monthlyTransactions : monthlyTransactions.filter(t => t.category === filterCategory)
+
+  const query = searchQuery.trim().toLowerCase()
+  const searchedTransactions = query
+    ? categoryFiltered.filter(t =>
+        (t.note || "").toLowerCase().includes(query) ||
+        (t.category || "").toLowerCase().includes(query)
+      )
+    : categoryFiltered
+
+  const sortedTransactions = [...searchedTransactions].sort((a, b) => {
+    if (sortBy === "date_asc") return new Date(a.date) - new Date(b.date)
+    if (sortBy === "amount_desc") return (Number(b.amount) || 0) - (Number(a.amount) || 0)
+    if (sortBy === "amount_asc") return (Number(a.amount) || 0) - (Number(b.amount) || 0)
+    return new Date(b.date) - new Date(a.date)
+  })
+
+  const totalPages = Math.max(1, Math.ceil(sortedTransactions.length / PAGE_SIZE))
+  const safePage = Math.min(Math.max(currentPage, 1), totalPages)
+  const pagedTransactions = sortedTransactions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   // Chart Data Preparation
   const expenseCategories = ['Makanan', 'Transportasi', 'Belanja', 'Tagihan', 'Hiburan', 'Lainnya']
@@ -458,7 +504,7 @@ function App() {
                   <Download className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Export CSV</span>
                 </Button>
-                <Button size="sm" className="h-9" onClick={() => handleAction(() => setIsModalOpen(true))}>
+                <Button size="sm" className="h-9" onClick={() => handleAction(() => { setEditingTx(null); setIsModalOpen(true) })}>
                   <Plus className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Tambah Transaksi</span>
                   <span className="sm:hidden">Tambah</span>
@@ -476,15 +522,36 @@ function App() {
                   </Select>
                 )}
               </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full">
+                <Input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari judul atau kategori..."
+                  className="h-9 sm:max-w-[260px]"
+                />
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-[200px] h-9">
+                    <SelectValue placeholder="Urutkan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date_desc">Terbaru</SelectItem>
+                    <SelectItem value="date_asc">Terlama</SelectItem>
+                    <SelectItem value="amount_desc">Nominal terbesar</SelectItem>
+                    <SelectItem value="amount_asc">Nominal terkecil</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Memuat data...</div>
-            ) : displayedTransactions.length === 0 ? (
+            ) : sortedTransactions.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Belum ada transaksi yang sesuai.</div>
             ) : (
+              <>
               <div className="divide-y">
-                {displayedTransactions.map(tx => (
+                {pagedTransactions.map(tx => (
                   <div key={tx.id} className="p-6 flex justify-between items-center hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'}`}>
@@ -498,15 +565,25 @@ function App() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       <span className={`font-semibold font-mono ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'}`}>
                         {tx.type === 'income' ? '+' : '-'}{formatIDR(tx.amount)}
                       </span>
                       <Button 
                         variant="ghost" 
                         size="icon"
+                        onClick={() => handleEditClick(tx)}
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
                         onClick={() => setTxToDelete(tx)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                        title="Hapus"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -514,6 +591,20 @@ function App() {
                   </div>
                 ))}
               </div>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-6 py-4 border-t">
+                <p className="text-xs text-muted-foreground">
+                  Halaman {safePage} dari {totalPages} • {sortedTransactions.length} transaksi
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="h-8" disabled={safePage <= 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))}>
+                    Sebelumnya
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8" disabled={safePage >= totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}>
+                    Berikutnya
+                  </Button>
+                </div>
+              </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -528,8 +619,10 @@ function App() {
       </div>
       <TransactionModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onTransactionAdded={handleTransactionAdded} 
+        onClose={handleCloseModal} 
+        onTransactionAdded={handleTransactionAdded}
+        onTransactionUpdated={handleTransactionUpdated}
+        editingTx={editingTx}
         userId={session?.user?.id}
       />
       <SettingsModal
