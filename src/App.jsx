@@ -181,8 +181,11 @@ function App() {
   const totalExpenseAll = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0)
   const balance = totalIncomeAll - totalExpenseAll
 
-  // Monthly stats
-  const monthlyTransactions = transactions.filter(t => t.date.startsWith(selectedMonth))
+  // Monthly stats (guard: selectedMonth bisa kosong/invalid dari input month)
+  const isValidMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth)
+  const monthlyTransactions = isValidMonth
+    ? transactions.filter(t => typeof t.date === 'string' && t.date.startsWith(selectedMonth))
+    : []
   const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0)
   const totalExpense = monthlyTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0)
   const monthlyBalance = totalIncome - totalExpense
@@ -217,6 +220,17 @@ function App() {
   }
 
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
+
+  const formatTxDate = (dateStr) => {
+    if (typeof dateStr !== 'string' || !dateStr) return '-'
+    const d = new Date(dateStr.length === 10 ? dateStr + 'T00:00:00' : dateStr)
+    return isNaN(d) ? '-' : d.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })
+  }
+
+  const formatMonthLabel = (monthStr) => {
+    const d = new Date(monthStr + '-01T00:00:00')
+    return isNaN(d) ? '—' : d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+  }
 
   const budgetValue = Number(settings.monthly_budget) || 0
   const targetValue = Number(settings.savings_target) || 0
@@ -261,7 +275,7 @@ function App() {
             <Input 
               type="month" 
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              onChange={(e) => { if (e.target.value) setSelectedMonth(e.target.value) }}
               className="w-[150px] sm:w-auto h-9 shrink-0 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
             />
             <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => handleAction(() => setIsSettingsOpen(true))}>
@@ -400,7 +414,7 @@ function App() {
           <Card className="col-span-1 flex flex-col">
             <CardHeader className="items-center pb-2">
               <CardTitle>Distribusi Pengeluaran</CardTitle>
-              <CardDescription>Bulan {new Date(selectedMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</CardDescription>
+              <CardDescription>Bulan {formatMonthLabel(selectedMonth)}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
               {chartData.length > 0 ? (
@@ -463,7 +477,7 @@ function App() {
                       <div>
                         <p className="font-medium">{tx.note || tx.category}</p>
                         <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
-                          <span>{new Date(tx.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                          <span>{formatTxDate(tx.date)}</span>
                           <span className="px-1.5 py-0.5 rounded bg-secondary text-[10px] font-medium">{tx.category}</span>
                         </p>
                       </div>

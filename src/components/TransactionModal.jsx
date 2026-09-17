@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import {
   Dialog,
@@ -18,13 +18,24 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 
+const getLocalToday = () => {
+  const d = new Date()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mm}-${dd}`
+}
+
 export default function TransactionModal({ isOpen, onClose, onTransactionAdded, userId }) {
   const [type, setType] = useState('expense')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(getLocalToday)
   const [note, setNote] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) setDate(getLocalToday())
+  }, [isOpen])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
