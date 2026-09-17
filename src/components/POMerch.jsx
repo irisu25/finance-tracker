@@ -87,8 +87,10 @@ export default function POMerch({ session }) {
     e.preventDefault()
     setIsSubmitting(true)
     
-    const newPaidAmount = selectedItem.paid_amount + Number(paymentAmount)
-    const finalPaid = Math.min(newPaidAmount, selectedItem.total_price)
+    const currentPaid = Number(selectedItem.paid_amount) || 0
+    const total = Number(selectedItem.total_price) || 0
+    const newPaidAmount = currentPaid + (Number(paymentAmount) || 0)
+    const finalPaid = Math.min(newPaidAmount, total)
     
     const { error } = await supabase
       .from('preorders')
@@ -117,8 +119,8 @@ export default function POMerch({ session }) {
     }
   }
 
-  const totalUnpaid = items.reduce((acc, curr) => acc + (curr.total_price - curr.paid_amount), 0)
-  const activeItems = items.filter(item => item.paid_amount < item.total_price).length
+  const totalUnpaid = items.reduce((acc, curr) => acc + ((Number(curr.total_price) || 0) - (Number(curr.paid_amount) || 0)), 0)
+  const activeItems = items.filter(item => (Number(item.paid_amount) || 0) < (Number(item.total_price) || 0)).length
 
   if (!session) {
     return (
@@ -162,15 +164,17 @@ export default function POMerch({ session }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {items.map(item => {
-            const progress = Math.min((item.paid_amount / item.total_price) * 100, 100)
-            const isLunas = item.paid_amount >= item.total_price
+            const totalPrice = Number(item.total_price) || 0
+            const paidAmount = Number(item.paid_amount) || 0
+            const progress = totalPrice > 0 ? Math.min(Math.max((paidAmount / totalPrice) * 100, 0), 100) : 0
+            const isLunas = totalPrice > 0 && paidAmount >= totalPrice
             
             return (
               <Card key={item.id} className={`overflow-hidden transition-all ${isLunas ? 'opacity-70' : ''}`}>
                 <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
                   <div>
                     <CardTitle className="text-base font-semibold">{item.item_name}</CardTitle>
-                    <CardDescription className="mt-1 font-mono">{formatIDR(item.total_price)}</CardDescription>
+                    <CardDescription className="mt-1 font-mono">{formatIDR(totalPrice)}</CardDescription>
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(item.id)}>
                     <Trash2 className="w-4 h-4" />
@@ -179,9 +183,9 @@ export default function POMerch({ session }) {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Terbayar: {formatIDR(item.paid_amount)}</span>
+                      <span className="text-muted-foreground">Terbayar: {formatIDR(paidAmount)}</span>
                       <span className={isLunas ? 'text-emerald-500 font-medium' : 'text-primary font-medium'}>
-                        {isLunas ? 'Lunas!' : `Sisa: ${formatIDR(item.total_price - item.paid_amount)}`}
+                        {isLunas ? 'Lunas!' : `Sisa: ${formatIDR(totalPrice - paidAmount)}`}
                       </span>
                     </div>
                     <Progress value={progress} className={`h-2 ${isLunas ? '[&>div]:bg-emerald-500' : ''}`} />

@@ -202,7 +202,7 @@ function App() {
   ]
 
   const chartData = expenseCategories.map((cat, i) => {
-    const total = monthlyTransactions.filter(t => t.type === 'expense' && t.category === cat).reduce((acc, curr) => acc + curr.amount, 0)
+    const total = monthlyTransactions.filter(t => t.type === 'expense' && t.category === cat).reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
     return { category: cat, amount: total, fill: expenseColors[i] }
   }).filter(d => d.amount > 0)
 
@@ -218,11 +218,15 @@ function App() {
 
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
 
-  const budgetPercentage = Math.min((totalExpense / settings.monthly_budget) * 100, 100)
-  const isOverBudget = totalExpense > settings.monthly_budget
+  const budgetValue = Number(settings.monthly_budget) || 0
+  const targetValue = Number(settings.savings_target) || 0
 
-  const savingsPercentage = Math.min((monthlyBalance / settings.savings_target) * 100, 100)
-  const isSavingsMet = monthlyBalance >= settings.savings_target
+  const budgetPercentage = budgetValue > 0 ? Math.min(Math.max((totalExpense / budgetValue) * 100, 0), 100) : 0
+  const isOverBudget = budgetValue > 0 && totalExpense > budgetValue
+
+  const rawSavings = targetValue > 0 ? (monthlyBalance / targetValue) * 100 : 0
+  const savingsPercentage = Math.min(Math.max(rawSavings, 0), 100)
+  const isSavingsMet = targetValue > 0 && monthlyBalance >= targetValue
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans p-4 sm:p-8">
