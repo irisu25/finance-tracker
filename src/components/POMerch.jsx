@@ -59,12 +59,31 @@ export default function POMerch({ session }) {
 
   const handleAddItem = async (e) => {
     e.preventDefault()
+
+    const parsedTotal = Number(totalPrice)
+    const parsedPaid = Number(paidAmount || 0)
+    if (!itemName.trim()) {
+      toast.error('Nama barang wajib diisi')
+      return
+    }
+    if (!Number.isFinite(parsedTotal) || parsedTotal <= 0) {
+      toast.error('Total harga harus lebih dari 0')
+      return
+    }
+    if (!Number.isFinite(parsedPaid) || parsedPaid < 0) {
+      toast.error('DP harus 0 atau lebih')
+      return
+    }
+    if (parsedPaid > parsedTotal) {
+      toast.error('DP tidak boleh melebihi total harga')
+      return
+    }
     setIsSubmitting(true)
 
     const newItem = {
-      item_name: itemName,
-      total_price: Number(totalPrice),
-      paid_amount: Number(paidAmount || 0),
+      item_name: itemName.trim(),
+      total_price: parsedTotal,
+      paid_amount: parsedPaid,
       user_id: session.user.id
     }
 
@@ -85,12 +104,24 @@ export default function POMerch({ session }) {
 
   const handlePayment = async (e) => {
     e.preventDefault()
+    if (!selectedItem) return
+
+    const parsedPayment = Number(paymentAmount)
+    if (!Number.isFinite(parsedPayment) || parsedPayment <= 0) {
+      toast.error('Nominal pembayaran harus lebih dari 0')
+      return
+    }
     setIsSubmitting(true)
     
     const currentPaid = Number(selectedItem.paid_amount) || 0
     const total = Number(selectedItem.total_price) || 0
-    const newPaidAmount = currentPaid + (Number(paymentAmount) || 0)
-    const finalPaid = Math.min(newPaidAmount, total)
+    const remaining = total - currentPaid
+    if (parsedPayment > remaining) {
+      toast.error(`Nominal melebihi sisa tagihan (${remaining})`)
+      setIsSubmitting(false)
+      return
+    }
+    const finalPaid = currentPaid + parsedPayment
     
     const { error } = await supabase
       .from('preorders')
@@ -229,11 +260,11 @@ export default function POMerch({ session }) {
             </div>
             <div className="space-y-2">
               <Label>Total Harga (Rp)</Label>
-              <Input type="number" required value={totalPrice} onChange={e => setTotalPrice(e.target.value)} placeholder="0" />
+              <Input type="number" required min="1" step="1" value={totalPrice} onChange={e => setTotalPrice(e.target.value)} placeholder="0" />
             </div>
             <div className="space-y-2">
               <Label>Sudah Dibayar (DP) (Rp)</Label>
-              <Input type="number" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} placeholder="0 (Kosongi jika belum DP)" />
+              <Input type="number" min="0" step="1" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} placeholder="0 (Kosongi jika belum DP)" />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Menyimpan...' : 'Simpan PO'}
@@ -263,7 +294,7 @@ export default function POMerch({ session }) {
             </div>
             <div className="space-y-2">
               <Label>Nominal Pembayaran (Rp)</Label>
-              <Input type="number" required value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} placeholder="Masukkan nominal" />
+              <Input type="number" required min="1" step="1" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} placeholder="Masukkan nominal" />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Memproses...' : 'Catat Pembayaran'}

@@ -25,17 +25,22 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    if (!budget || !target) {
-      toast.error("Mohon isi kedua target")
-      setIsLoading(false)
+    const parsedBudget = Number(budget)
+    const parsedTarget = Number(target)
+    if (!Number.isFinite(parsedBudget) || parsedBudget < 0) {
+      toast.error("Budget harus angka 0 atau lebih")
       return
     }
+    if (!Number.isFinite(parsedTarget) || parsedTarget < 0) {
+      toast.error("Target tabungan harus angka 0 atau lebih")
+      return
+    }
+    setIsLoading(true)
 
     const updatedSettings = {
-      monthly_budget: parseFloat(budget),
-      savings_target: parseFloat(target)
+      monthly_budget: parsedBudget,
+      savings_target: parsedTarget
     }
 
     const { error } = await supabase
@@ -71,6 +76,8 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="Contoh: 5000000"
+                min="0"
+                step="1"
                 required
               />
             </div>
@@ -82,6 +89,8 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 placeholder="Contoh: 1000000"
+                min="0"
+                step="1"
                 required
               />
             </div>

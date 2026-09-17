@@ -39,23 +39,36 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    if (!amount || !category || !date || !note) {
-      toast.error("Mohon lengkapi semua data wajib")
-      setIsLoading(false)
+    const parsedAmount = Number(amount)
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      toast.error("Nominal harus angka lebih dari 0")
       return
     }
+    if (!category) {
+      toast.error("Pilih kategori dulu")
+      return
+    }
+    if (!date || isNaN(new Date(date + 'T00:00:00'))) {
+      toast.error("Tanggal tidak valid")
+      return
+    }
+    setIsLoading(true)
 
     if (!supabase) {
         toast.error("Supabase client belum terkonfigurasi. Pastikan .env sudah benar.")
         setIsLoading(false)
         return
     }
+    if (!userId) {
+        toast.error("Anda harus login dulu.")
+        setIsLoading(false)
+        return
+    }
 
     const { data, error } = await supabase
       .from('transactions')
-      .insert([{ amount: parseFloat(amount), type, category, date, note, user_id: userId }])
+      .insert([{ amount: parsedAmount, type, category, date, note: note.trim() || null, user_id: userId }])
       .select()
 
     setIsLoading(false)
@@ -111,6 +124,8 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Contoh: 50000"
+                min="1"
+                step="1"
                 required
               />
             </div>
@@ -141,13 +156,12 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
             </div>
 
             <div className="space-y-2">
-              <Label>Judul Transaksi</Label>
+              <Label>Judul Transaksi (opsional)</Label>
               <Input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Contoh: Makan Nasi Padang"
-                required
               />
             </div>
           </div>
