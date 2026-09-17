@@ -51,8 +51,40 @@ const getCategoryIcon = (category) => {
 }
 
 function App() {
+  const EXPENSE_CATEGORIES = ['Makanan', 'Transportasi', 'Belanja', 'Tagihan', 'Hiburan', 'Lainnya']
+  const DEFAULT_NEEDS = ['Makanan', 'Transportasi']
+  const getStoredWeeklyBudget = () => Number(localStorage.getItem("ft_weekly_food_budget")) || 0
+  const getStoredNeeds = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem("ft_needs_categories") || 'null')
+      if (Array.isArray(parsed)) return parsed.filter(c => EXPENSE_CATEGORIES.includes(c))
+    } catch { /* abaikan, pakai default */ }
+    return DEFAULT_NEEDS
+  }
+  const DEFAULT_RULE = { needs: 50, wants: 30, save: 20 }
+  const getStoredRule = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem("ft_rule_pcts") || 'null')
+      if (parsed && [parsed.needs, parsed.wants, parsed.save].every(n => Number.isFinite(Number(n)) && Number(n) >= 0)) {
+        const r = { needs: Number(parsed.needs), wants: Number(parsed.wants), save: Number(parsed.save) }
+        if (r.needs + r.wants + r.save === 100) return r
+      }
+    } catch { /* abaikan, pakai default */ }
+    return DEFAULT_RULE
+  }
   const [transactions, setTransactions] = useState([])
-  const [settings, setSettings] = useState({ monthly_budget: 5000000, savings_target: 1000000 })
+  const ruleFromStored = () => {
+    const r = getStoredRule()
+    return { needs_pct: r.needs, wants_pct: r.wants, save_pct: r.save }
+  }
+  const ruleFromRow = (row) => {
+    const n = Number(row?.needs_pct), w = Number(row?.wants_pct), s = Number(row?.save_pct)
+    if ([n, w, s].every(v => Number.isFinite(v) && v >= 0) && n + w + s === 100) {
+      return { needs_pct: n, wants_pct: w, save_pct: s }
+    }
+    return ruleFromStored()
+  }
+  const [settings, setSettings] = useState({ monthly_budget: 5000000, savings_target: 1000000, weekly_food_budget: getStoredWeeklyBudget(), needs_categories: getStoredNeeds(), needs_pct: 50, wants_pct: 30, save_pct: 20 })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
@@ -105,7 +137,7 @@ function App() {
       fetchData()
     } else {
       setTransactions([])
-      setSettings({ monthly_budget: 5000000, savings_target: 1000000 })
+      setSettings({ monthly_budget: 5000000, savings_target: 1000000, weekly_food_budget: getStoredWeeklyBudget(), needs_categories: getStoredNeeds(), ...ruleFromStored() })
       setIsLoading(false)
     }
   }, [session])
@@ -123,7 +155,13 @@ function App() {
       const { data: settingsData, error: settingsError } = await supabase.from('user_settings').select('*').eq('user_id', session.user.id)
       if (settingsError) throw settingsError
       if (settingsData && settingsData.length > 0) {
-        setSettings(settingsData[0])
+        const row = settingsData[0]
+        setSettings({
+          ...row,
+          weekly_food_budget: row.weekly_food_budget ?? getStoredWeeklyBudget(),
+          needs_categories: Array.isArray(row.needs_categories) ? row.needs_categories : getStoredNeeds(),
+          ...ruleFromRow(row),
+        })
       } else {
         const { data: newSettings, error: insertError } = await supabase.from('user_settings').insert({ user_id: session.user.id, monthly_budget: 5000000, savings_target: 1000000 }).select()
         if (insertError) throw insertError
@@ -293,6 +331,75 @@ function App() {
     const d = new Date(monthStr + '-01T00:00:00')
     return isNaN(d) ? '—' : d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
   }
+
+  // 50/30/20: Needs bisa diatur di Target, sisanya otomatis Wants
+  const needsCategories = Array.isArray(settings.needs_categories)
+    ? settings.needs_categories.filter(c => EXPENSE_CATEGORIES.includes(c))
+    : DEFAULT_NEEDS
+  const WEEKLY_FOOD_CATEGORIES = ['Makanan', 'Hiburan']
+
+  const toISODate = (d) => {
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${d.getFullYear()}-${mm}-${dd}`
+  }
+
+  const needsTotal = monthlyTransactions
+    .filter(t => t.type === 'expense' && needsCategories.includes(t.category))
+    .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
+  const wantsTotal = Math.max(totalExpense - needsTotal, 0)
+  const ruleNeeds = Number(settings.needs_pct)
+  const ruleWants = Number(settings.wants_pct)
+  const ruleSave = Number(settings.save_pct)
+  const ruleValid = [ruleNeeds, ruleWants, ruleSave].every(v => Number.isFinite(v) && v >= 0)
+    && ruleNeeds + ruleWants + ruleSave === 100
+  const targetNeeds = ruleValid ? ruleNeeds : DEFAULT_RULE.needs
+  const targetWants = ruleValid ? ruleWants : DEFAULT_RULE.wants
+  const targetSave = ruleValid ? ruleSave : DEFAULT_RULE.save
+  const ruleLabel = `${targetNeeds}/${targetWants}/${targetSave}`
+  const hasRuleIncome = totalIncome > 0
+  const needsPct = hasRuleIncome ? (needsTotal / totalIncome) * 100 : 0
+  const wantsPct = hasRuleIncome ? (wantsTotal / totalIncome) * 100 : 0
+  const savePct = hasRuleIncome ? (Math.max(monthlyBalance, 0) / totalIncome) * 100 : 0
+
+  // Budget makan/nongkrong mingguan (Senin–Minggu berjalan)
+  const weekRange = (() => {
+    const now = new Date()
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7))
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    return { start: toISODate(monday), end: toISODate(sunday) }
+  })()
+  const weeklyFoodSpent = transactions
+    .filter(t => t.type === 'expense'
+      && WEEKLY_FOOD_CATEGORIES.includes(t.category)
+      && typeof t.date === 'string'
+      && t.date.slice(0, 10) >= weekRange.start
+      && t.date.slice(0, 10) <= weekRange.end)
+    .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
+  const weeklyFoodBudget = Number(settings.weekly_food_budget) || 0
+  const weeklyFoodPct = weeklyFoodBudget > 0 ? Math.min(Math.max((weeklyFoodSpent / weeklyFoodBudget) * 100, 0), 100) : 0
+  const isWeeklyOver = weeklyFoodBudget > 0 && weeklyFoodSpent > weeklyFoodBudget
+
+  // Streak no-spend: hanya hari penuh (mulai dari kemarin ke belakang)
+  const noSpendStreak = (() => {
+    const expenseDates = new Set(
+      transactions
+        .filter(t => t.type === 'expense' && typeof t.date === 'string')
+        .map(t => t.date.slice(0, 10))
+    )
+    if (expenseDates.size === 0) return { days: 0, empty: true, lastSpend: null }
+    const cursor = new Date()
+    cursor.setDate(cursor.getDate() - 1)
+    let days = 0
+    while (days < 365) {
+      if (expenseDates.has(toISODate(cursor))) break
+      days += 1
+      cursor.setDate(cursor.getDate() - 1)
+    }
+    return { days, empty: false, lastSpend: toISODate(cursor) }
+  })()
 
   const budgetValue = Number(settings.monthly_budget) || 0
   const targetValue = Number(settings.savings_target) || 0
@@ -465,6 +572,95 @@ function App() {
                 <span className="truncate mr-1">{formatIDR(monthlyBalance)}</span>
                 <span className="truncate">{formatIDR(settings.savings_target)}</span>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 50/30/20, Weekly Food, No-Spend Streak */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+
+          <Card className="col-span-1">
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-base">Aturan {ruleLabel}</CardTitle>
+              <CardDescription className="text-[10px] sm:text-sm">
+                {hasRuleIncome ? 'Basis pemasukan bulan ini' : 'Butuh pemasukan bulan ini'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-6 space-y-2">
+              {[
+                { label: `Needs ${targetNeeds}%`, actual: needsTotal, pct: needsPct, ok: needsPct <= targetNeeds },
+                { label: `Wants ${targetWants}%`, actual: wantsTotal, pct: wantsPct, ok: wantsPct <= targetWants },
+                { label: `Save ${targetSave}%`, actual: Math.max(monthlyBalance, 0), pct: savePct, ok: savePct >= targetSave },
+              ].map(row => (
+                <div key={row.label} className="space-y-1">
+                  <div className="flex justify-between text-[10px] sm:text-xs">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <span className={`font-mono font-medium ${hasRuleIncome && !row.ok ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                      {formatIDR(row.actual)}{hasRuleIncome ? ` • ${Math.round(row.pct)}%` : ''}
+                    </span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${hasRuleIncome && !row.ok ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${hasRuleIncome ? Math.min(Math.max(row.pct, 0), 100) : 0}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+              <p className="text-[10px] text-muted-foreground pt-1">Needs: {needsCategories.length ? needsCategories.join(' + ') : '—'}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1">
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <CardTitle className="text-xs sm:text-base">Makan & Nongkrong</CardTitle>
+                <span className={`text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${isWeeklyOver ? 'bg-destructive/15 text-destructive' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'}`}>
+                  {weeklyFoodBudget > 0 ? (isWeeklyOver ? 'Over' : 'Aman') : 'Belum diset'}
+                </span>
+              </div>
+              <CardDescription className="text-[10px] sm:text-sm">
+                Minggu ini • Makanan + Hiburan
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-6">
+              {weeklyFoodBudget > 0 ? (
+                <>
+                  <div className="w-full bg-secondary rounded-full h-1.5 sm:h-2.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${isWeeklyOver ? 'bg-destructive' : weeklyFoodPct > 75 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${weeklyFoodPct}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-2 font-mono">
+                    <span className="truncate mr-1">{formatIDR(weeklyFoodSpent)}</span>
+                    <span className="truncate">{formatIDR(weeklyFoodBudget)}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">Atur budget mingguan di Target.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1">
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className="text-xs sm:text-base">Streak No-Spend</CardTitle>
+              <CardDescription className="text-[10px] sm:text-sm">
+                Hari penuh tanpa belanja
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-6">
+              <div className="text-2xl sm:text-3xl font-bold font-mono">
+                {noSpendStreak.empty ? '—' : `${noSpendStreak.days} hari`}
+              </div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                {noSpendStreak.empty
+                  ? 'Belum ada pengeluaran tercatat.'
+                  : noSpendStreak.days === 0
+                    ? 'Kemarin ada belanja. Mulai lagi hari ini.'
+                    : `Terakhir belanja: ${formatTxDate(noSpendStreak.lastSpend)}`}
+              </p>
             </CardContent>
           </Card>
         </div>
