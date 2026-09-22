@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import CurrencyInput from "./CurrencyInput"
 import { Progress } from "@/components/ui/progress"
-import { Plus, Trash2, ShoppingBag, CreditCard, CheckCircle2 } from 'lucide-react'
+import { Plus, Trash2, ShoppingBag, CreditCard, CheckCircle2, LogIn } from 'lucide-react'
 import { supabase } from '../supabaseClient'
 import { toast } from 'sonner'
 import {
@@ -16,7 +17,7 @@ import { Label } from "@/components/ui/label"
 
 const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
 
-export default function POMerch({ session }) {
+export default function POMerch({ session, onLogin }) {
   const [items, setItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -177,7 +178,11 @@ export default function POMerch({ session }) {
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <ShoppingBag className="w-16 h-16 text-muted-foreground mb-4 opacity-20" />
         <h2 className="text-xl font-semibold mb-2">Silakan Login</h2>
-        <p className="text-muted-foreground">Anda harus login untuk mencatat PO Merch.</p>
+        <p className="text-muted-foreground mb-4">Anda harus login untuk mencatat PO Merch.</p>
+        <Button size="sm" onClick={onLogin}>
+          <LogIn className="w-4 h-4 mr-2" />
+          Login
+        </Button>
       </div>
     )
   }
@@ -279,11 +284,11 @@ export default function POMerch({ session }) {
             </div>
             <div className="space-y-2">
               <Label>Total Harga (Rp)</Label>
-              <Input type="number" required min="1" step="1" value={totalPrice} onChange={e => setTotalPrice(e.target.value)} placeholder="0" />
+              <CurrencyInput required value={totalPrice} onChange={setTotalPrice} placeholder="Contoh: 500.000" />
             </div>
             <div className="space-y-2">
               <Label>Sudah Dibayar (DP) (Rp)</Label>
-              <Input type="number" min="0" step="1" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} placeholder="0 (Kosongi jika belum DP)" />
+              <CurrencyInput value={paidAmount} onChange={setPaidAmount} placeholder="0 (Kosongi jika belum DP)" />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Menyimpan...' : 'Simpan PO'}
@@ -313,7 +318,7 @@ export default function POMerch({ session }) {
             </div>
             <div className="space-y-2">
               <Label>Nominal Pembayaran (Rp)</Label>
-              <Input type="number" required min="1" step="1" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} placeholder="Masukkan nominal" />
+              <CurrencyInput required value={paymentAmount} onChange={setPaymentAmount} placeholder="Masukkan nominal" />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Memproses...' : 'Catat Pembayaran'}

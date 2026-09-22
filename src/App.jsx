@@ -412,7 +412,7 @@ function App() {
   const isSavingsMet = targetValue > 0 && monthlyBalance >= targetValue
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans p-4 sm:p-8">
+    <div className="min-h-screen bg-background text-foreground font-sans p-4 sm:p-8 scroll-smooth">
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Header */}
@@ -478,7 +478,20 @@ function App() {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6 outline-none">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+        <nav className="sticky top-0 z-10 bg-background/95 backdrop-blur py-2">
+          <div className="flex gap-2 overflow-x-auto">
+            {[['ringkasan', 'Ringkasan'], ['target', 'Target'], ['insight', 'Insight'], ['riwayat', 'Riwayat']].map(([id, label]) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                className="shrink-0 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-full border bg-card hover:bg-muted transition-colors"
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </nav>
+        <section id="ringkasan" className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 scroll-mt-16">
           <Card className="col-span-2 md:col-span-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Saldo (Semua Waktu)</CardTitle>
@@ -512,10 +525,10 @@ function App() {
               <div className="text-sm sm:text-2xl font-bold text-rose-600 dark:text-rose-500 font-mono truncate">-{formatIDR(totalExpense)}</div>
             </CardContent>
           </Card>
-        </div>
+        </section>
         
         {/* Progress & Targets */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+        <section id="target" className="grid grid-cols-2 gap-3 sm:gap-6 scroll-mt-16">
           
           <Card className="col-span-1">
             <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
@@ -574,10 +587,10 @@ function App() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </section>
 
         {/* 50/30/20, Weekly Food, No-Spend Streak */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+        <section id="insight" className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 scroll-mt-16">
 
           <Card className="col-span-1">
             <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
@@ -663,10 +676,10 @@ function App() {
               </p>
             </CardContent>
           </Card>
-        </div>
+        </section>
 
         {/* Analytics & History Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section id="riwayat" className="grid grid-cols-1 lg:grid-cols-3 gap-6 scroll-mt-16">
           
           {/* Chart */}
           <Card className="col-span-1 flex flex-col">
@@ -742,8 +755,24 @@ function App() {
           <CardContent className="p-0">
             {isLoading ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Memuat data...</div>
+            ) : !session ? (
+              <div className="p-8 text-center space-y-3">
+                <p className="text-sm text-muted-foreground">Login untuk mulai mencatat keuangan.</p>
+                <Button size="sm" onClick={() => setIsAuthOpen(true)}>
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login
+                </Button>
+              </div>
             ) : sortedTransactions.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-sm">Belum ada transaksi yang sesuai.</div>
+              <div className="p-8 text-center space-y-3">
+                <p className="text-sm text-muted-foreground">Belum ada transaksi yang sesuai.</p>
+                {!query && filterCategory === "Semua" && (
+                  <Button size="sm" onClick={() => handleAction(() => { setEditingTx(null); setIsModalOpen(true) })}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tambah transaksi pertama
+                  </Button>
+                )}
+              </div>
             ) : (
               <>
               <div className="divide-y">
@@ -804,12 +833,12 @@ function App() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </section>
 
           </TabsContent>
           
           <TabsContent value="pomerch" className="outline-none">
-            <POMerch session={session} />
+            <POMerch session={session} onLogin={() => setIsAuthOpen(true)} />
           </TabsContent>
         </Tabs>
       </div>

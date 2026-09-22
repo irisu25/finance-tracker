@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import CurrencyInput from "./CurrencyInput"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -160,15 +161,19 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Nominal (Rp)</Label>
-              <Input
-                type="number"
+              <CurrencyInput
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Contoh: 50000"
-                min="1"
-                step="1"
+                onChange={setAmount}
+                placeholder="Contoh: 50.000"
                 required
               />
+              <div className="flex flex-wrap gap-2">
+                {[{ l: '10rb', v: '10000' }, { l: '25rb', v: '25000' }, { l: '50rb', v: '50000' }, { l: '100rb', v: '100000' }].map(c => (
+                  <Button key={c.v} type="button" variant="outline" size="sm" className="h-7 px-2.5 text-xs" onClick={() => setAmount(c.v)}>
+                    {c.l}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">

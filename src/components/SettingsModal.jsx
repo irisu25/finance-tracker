@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import CurrencyInput from "./CurrencyInput"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
@@ -157,39 +158,30 @@ export default function SettingsModal({ isOpen, onClose, currentSettings, onSett
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Batas Maksimal Pengeluaran Bulanan (Rp)</Label>
-              <Input
-                type="number"
+              <CurrencyInput
                 value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                placeholder="Contoh: 5000000"
-                min="0"
-                step="1"
+                onChange={setBudget}
+                placeholder="Contoh: 5.000.000"
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label>Target Tabungan Bulanan (Rp)</Label>
-              <Input
-                type="number"
+              <CurrencyInput
                 value={target}
-                onChange={(e) => setTarget(e.target.value)}
-                placeholder="Contoh: 1000000"
-                min="0"
-                step="1"
+                onChange={setTarget}
+                placeholder="Contoh: 1.000.000"
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label>Budget Makan & Nongkrong Mingguan (Rp)</Label>
-              <Input
-                type="number"
+              <CurrencyInput
                 value={weeklyBudget}
-                onChange={(e) => setWeeklyBudget(e.target.value)}
-                placeholder="Contoh: 500000 (kosongi = belum diset)"
-                min="0"
-                step="1"
+                onChange={setWeeklyBudget}
+                placeholder="Contoh: 500.000 (kosongi = belum diset)"
               />
             </div>
 
