@@ -800,7 +800,7 @@ function App() {
                         variant="ghost" 
                         size="icon"
                         onClick={() => handleEditClick(tx)}
-                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground"
                         title="Edit"
                       >
                         <Pencil className="w-4 h-4" />
@@ -809,7 +809,7 @@ function App() {
                         variant="ghost" 
                         size="icon"
                         onClick={() => setTxToDelete(tx)}
-                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                        className="text-muted-foreground hover:text-destructive"
                         title="Hapus"
                       >
                         <Trash2 className="w-4 h-4" />
