@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 
-const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
+const idrFormatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+const formatIDR = (num) => idrFormatter.format(num)
 
 export default function POMerch({ session, onLogin }) {
   const [items, setItems] = useState([])

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { supabase } from './supabaseClient'
 import TransactionModal from './components/TransactionModal'
 import SettingsModal from './components/SettingsModal'
@@ -22,18 +22,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Pie, PieChart } from "recharts"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Pencil, PiggyBank, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff, Download } from 'lucide-react'
+import { Plus, Settings, TrendingUp, TrendingDown, Trash2, Pencil, PiggyBank, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff, Download } from 'lucide-react'
 import AuthModal from './components/AuthModal'
 import POMerch from './components/POMerch'
+
+const ExpenseChart = React.lazy(() => import('./components/ExpenseChart'))
+
+// Formatter di-hoist ke module scope: jangan bikin ulang tiap render (HP kentang).
+const idrFormatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+const formatIDR = (num) => idrFormatter.format(num)
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -169,7 +169,7 @@ function App() {
         if (newSettings && newSettings.length > 0) setSettings(newSettings[0])
       }
 
-      const { data: txData, error: txError } = await supabase.from('transactions').select('*').eq('user_id', session.user.id).order('date', { ascending: false })
+      const { data: txData, error: txError } = await supabase.from('transactions').select('id,amount,type,category,date,note,user_id').eq('user_id', session.user.id).order('date', { ascending: false })
       if (txError) throw txError
       if (txData) setTransactions(txData)
     } catch (error) {
@@ -320,8 +320,6 @@ function App() {
     Hiburan: { label: "Hiburan", color: "#10b981" },
     Lainnya: { label: "Lainnya", color: "#64748b" },
   }
-
-  const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
 
   const formatTxDate = (dateStr) => {
     if (typeof dateStr !== 'string' || !dateStr) return '-'
@@ -691,12 +689,9 @@ function App() {
             </CardHeader>
             <CardContent className="flex-1 pb-0">
               {chartData.length > 0 ? (
-                <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
-                  <PieChart>
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                    <Pie data={chartData} dataKey="amount" nameKey="category" innerRadius={60} strokeWidth={5} />
-                  </PieChart>
-                </ChartContainer>
+                <Suspense fallback={<div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">Memuat grafik...</div>}>
+                  <ExpenseChart data={chartData} config={chartConfig} />
+                </Suspense>
               ) : (
                 <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">Belum ada pengeluaran.</div>
               )}
