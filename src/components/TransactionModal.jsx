@@ -133,6 +133,16 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
   const savingCategories = ['Tabungan']
   const categories = type === 'expense' ? expenseCategories : type === 'income' ? incomeCategories : savingCategories
 
+  // Ganti tipe tanpa menghapus kategori kalau masih valid (aman saat edit / kepencet di HP)
+  const pickType = (next) => {
+    const list = next === 'expense' ? expenseCategories : next === 'income' ? incomeCategories : savingCategories
+    setType(next)
+    setCategory((prev) => {
+      if (list.includes(prev)) return prev
+      return next === 'saving' ? 'Tabungan' : ''
+    })
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -145,21 +155,21 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
           <div className="flex bg-muted p-1 rounded-lg">
             <button
               type="button"
-              onClick={() => { setType('expense'); setCategory(''); }}
+              onClick={() => pickType('expense')}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'expense' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:bg-muted-foreground/10'}`}
             >
               Pengeluaran
             </button>
             <button
               type="button"
-              onClick={() => { setType('income'); setCategory(''); }}
+              onClick={() => pickType('income')}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'income' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:bg-muted-foreground/10'}`}
             >
               Pemasukan
             </button>
             <button
               type="button"
-              onClick={() => { setType('saving'); setCategory('Tabungan'); }}
+              onClick={() => pickType('saving')}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'saving' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:bg-muted-foreground/10'}`}
             >
               Nabung
