@@ -130,7 +130,8 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
 
   const expenseCategories = ['Makanan', 'Transportasi', 'Belanja', 'Tagihan', 'Hiburan', 'Lainnya']
   const incomeCategories = ['Gaji', 'Bonus', 'Investasi', 'Hadiah', 'Lainnya']
-  const categories = type === 'expense' ? expenseCategories : incomeCategories
+  const savingCategories = ['Tabungan']
+  const categories = type === 'expense' ? expenseCategories : type === 'income' ? incomeCategories : savingCategories
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -155,6 +156,13 @@ export default function TransactionModal({ isOpen, onClose, onTransactionAdded, 
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'income' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:bg-muted-foreground/10'}`}
             >
               Pemasukan
+            </button>
+            <button
+              type="button"
+              onClick={() => { setType('saving'); setCategory('Tabungan'); }}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${type === 'saving' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:bg-muted-foreground/10'}`}
+            >
+              Nabung
             </button>
           </div>
 

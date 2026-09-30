@@ -31,7 +31,7 @@ import {
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Pencil, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff, Download } from 'lucide-react'
+import { Plus, Settings, Wallet, TrendingUp, TrendingDown, Trash2, Pencil, PiggyBank, Utensils, Car, ShoppingBag, Receipt, Film, Briefcase, Award, Gift, LineChart, CircleDollarSign, Sun, Moon, LogOut, LogIn, Eye, EyeOff, Download } from 'lucide-react'
 import AuthModal from './components/AuthModal'
 import POMerch from './components/POMerch'
 
@@ -46,6 +46,7 @@ const getCategoryIcon = (category) => {
     case 'Bonus': return <Award className="w-5 h-5" />;
     case 'Investasi': return <LineChart className="w-5 h-5" />;
     case 'Hadiah': return <Gift className="w-5 h-5" />;
+    case 'Tabungan': return <PiggyBank className="w-5 h-5" />;
     default: return <CircleDollarSign className="w-5 h-5" />;
   }
 }
@@ -239,7 +240,7 @@ function App() {
     
     // Ekspor data bulan ini yang sudah difilter search/kategori/sort (semua halaman)
     sortedTransactions.forEach(tx => {
-      const type = tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'
+      const type = tx.type === 'income' ? 'Pemasukan' : tx.type === 'saving' ? 'Tabungan' : 'Pengeluaran'
       const category = `"${tx.category}"`
       const note = `"${tx.note || ''}"`
       csvRows.push([tx.date, type, category, tx.amount, note].join(','))
@@ -269,7 +270,8 @@ function App() {
     : []
   const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0)
   const totalExpense = monthlyTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0)
-  const monthlyBalance = totalIncome - totalExpense
+  // TF nabung (type 'saving'): cuma catatan per bulan, tidak mengurangi saldo
+  const monthlySavings = monthlyTransactions.filter(t => t.type === 'saving').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0)
 
   const availableCategories = ["Semua", ...new Set(monthlyTransactions.map(t => t.category))]
   const categoryFiltered = filterCategory === "Semua" ? monthlyTransactions : monthlyTransactions.filter(t => t.category === filterCategory)
@@ -360,7 +362,7 @@ function App() {
   const hasRuleIncome = totalIncome > 0
   const needsPct = hasRuleIncome ? (needsTotal / totalIncome) * 100 : 0
   const wantsPct = hasRuleIncome ? (wantsTotal / totalIncome) * 100 : 0
-  const savePct = hasRuleIncome ? (Math.max(monthlyBalance, 0) / totalIncome) * 100 : 0
+  const savePct = hasRuleIncome ? (monthlySavings / totalIncome) * 100 : 0
 
   // Budget makan/nongkrong mingguan (Senin–Minggu berjalan)
   const weekRange = (() => {
@@ -407,9 +409,9 @@ function App() {
   const budgetPercentage = budgetValue > 0 ? Math.min(Math.max((totalExpense / budgetValue) * 100, 0), 100) : 0
   const isOverBudget = budgetValue > 0 && totalExpense > budgetValue
 
-  const rawSavings = targetValue > 0 ? (monthlyBalance / targetValue) * 100 : 0
+  const rawSavings = targetValue > 0 ? (monthlySavings / targetValue) * 100 : 0
   const savingsPercentage = Math.min(Math.max(rawSavings, 0), 100)
-  const isSavingsMet = targetValue > 0 && monthlyBalance >= targetValue
+  const isSavingsMet = targetValue > 0 && monthlySavings >= targetValue
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans p-4 sm:p-8 scroll-smooth">
@@ -569,8 +571,8 @@ function App() {
               </div>
               <CardDescription className="text-[10px] sm:text-sm">
                 {isSavingsMet 
-                  ? `Lebih ${formatIDR(monthlyBalance - settings.savings_target)}`
-                  : `Kurang ${formatIDR(settings.savings_target - monthlyBalance)}`
+                  ? `Lebih ${formatIDR(monthlySavings - settings.savings_target)}`
+                  : `Kurang ${formatIDR(settings.savings_target - monthlySavings)}`
                 }
               </CardDescription>
             </CardHeader>
@@ -582,7 +584,7 @@ function App() {
                 />
               </div>
               <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-2 font-mono">
-                <span className="truncate mr-1">{formatIDR(monthlyBalance)}</span>
+                <span className="truncate mr-1">{formatIDR(monthlySavings)}</span>
                 <span className="truncate">{formatIDR(settings.savings_target)}</span>
               </div>
             </CardContent>
@@ -603,7 +605,7 @@ function App() {
               {[
                 { label: `Needs ${targetNeeds}%`, actual: needsTotal, pct: needsPct, ok: needsPct <= targetNeeds },
                 { label: `Wants ${targetWants}%`, actual: wantsTotal, pct: wantsPct, ok: wantsPct <= targetWants },
-                { label: `Save ${targetSave}%`, actual: Math.max(monthlyBalance, 0), pct: savePct, ok: savePct >= targetSave },
+                { label: `Save ${targetSave}%`, actual: monthlySavings, pct: savePct, ok: savePct >= targetSave },
               ].map(row => (
                 <div key={row.label} className="space-y-1">
                   <div className="flex justify-between text-[10px] sm:text-xs">
@@ -779,7 +781,7 @@ function App() {
                 {pagedTransactions.map(tx => (
                   <div key={tx.id} className="p-6 flex justify-between items-center hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : tx.type === 'saving' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'}`}>
                         {getCategoryIcon(tx.category)}
                       </div>
                       <div>
@@ -791,8 +793,8 @@ function App() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2">
-                      <span className={`font-semibold font-mono ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'}`}>
-                        {tx.type === 'income' ? '+' : '-'}{formatIDR(tx.amount)}
+                      <span className={`font-semibold font-mono ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : tx.type === 'saving' ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'}`}>
+                        {tx.type === 'income' ? '+' : tx.type === 'saving' ? '' : '-'}{formatIDR(tx.amount)}
                       </span>
                       <Button 
                         variant="ghost" 
