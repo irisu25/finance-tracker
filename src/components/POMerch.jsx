@@ -24,6 +24,12 @@ export default function POMerch({ session, onLogin }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const isItemLunas = (item) => {
+    const total = Number(item.total_price) || 0
+    return total > 0 && (Number(item.paid_amount) || 0) >= total
+  }
   
   // Form add item
   const [itemName, setItemName] = useState('')
@@ -172,7 +178,18 @@ export default function POMerch({ session, onLogin }) {
   }
 
   const totalUnpaid = items.reduce((acc, curr) => acc + ((Number(curr.total_price) || 0) - (Number(curr.paid_amount) || 0)), 0)
-  const activeItems = items.filter(item => (Number(item.paid_amount) || 0) < (Number(item.total_price) || 0)).length
+  const activeItems = items.filter(item => !isItemLunas(item)).length
+  const doneItems = items.length - activeItems
+  const filteredItems = statusFilter === 'active'
+    ? items.filter(item => !isItemLunas(item))
+    : statusFilter === 'done'
+      ? items.filter(item => isItemLunas(item))
+      : items
+  const emptyFilterText = statusFilter === 'active'
+    ? 'Tidak ada PO yang belum lunas.'
+    : statusFilter === 'done'
+      ? 'Belum ada PO yang lunas.'
+      : 'Belum ada PO yang dicatat.'
 
   if (!session) {
     return (
@@ -202,28 +219,47 @@ export default function POMerch({ session, onLogin }) {
         </Card>
       </div>
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Daftar PO Saya</h2>
-        <Button onClick={() => setIsModalOpen(true)} size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Tambah PO
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setIsModalOpen(true)} size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah PO
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto">
+        {[
+          ['all', `Semua (${items.length})`],
+          ['active', `Belum lunas (${activeItems})`],
+          ['done', `Lunas (${doneItems})`],
+        ].map(([val, label]) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => setStatusFilter(val)}
+            className={`shrink-0 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-full border transition-colors ${statusFilter === val ? 'bg-primary text-primary-foreground border-primary' : 'bg-card hover:bg-muted'}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Memuat data...</div>
-      ) : items.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="text-center py-12 border border-dashed rounded-xl">
           <ShoppingBag className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-20" />
-          <p className="text-muted-foreground">Belum ada PO yang dicatat.</p>
+          <p className="text-muted-foreground">{emptyFilterText}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {items.map(item => {
+          {filteredItems.map(item => {
             const totalPrice = Number(item.total_price) || 0
             const paidAmount = Number(item.paid_amount) || 0
             const progress = totalPrice > 0 ? Math.min(Math.max((paidAmount / totalPrice) * 100, 0), 100) : 0
-            const isLunas = totalPrice > 0 && paidAmount >= totalPrice
+            const isLunas = isItemLunas(item)
             
             return (
               <Card key={item.id} className={`overflow-hidden transition-all ${isLunas ? 'opacity-70' : ''}`}>
